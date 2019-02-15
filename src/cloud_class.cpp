@@ -37,8 +37,27 @@ Cloud::Cloud(ros::NodeHandle handle)
 	this->cloud3_sub = handle.subscribe("cam_3/depth_registered/points", 1, &Cloud::cloud3_callback, this);
 
     while (!this->initialized()) ros::spinOnce();
+}
 
-	ROS_INFO("Master cloud is of size %zu", this->master_cloud.data.size());
+// CONCATENATE CLOUDS FUNCTION
+// concatenates the (points | fields) of all the 
+// cloud members into the master pointcloud
+void Cloud::concatenate_clouds() 
+{
+	PointCloud<PointXYZ> xyz_master_cloud;
+	PointCloud<PointXYZ> xyz_cloud1;
+	PointCloud<PointXYZ> xyz_cloud2;
+	PointCloud<PointXYZ> xyz_cloud3;
+
+	fromROSMsg(this->cloud1, xyz_cloud1);
+	fromROSMsg(this->cloud2, xyz_cloud2);
+	fromROSMsg(this->cloud3, xyz_cloud3);
+
+	xyz_master_cloud = xyz_cloud1;
+	xyz_master_cloud+= xyz_cloud2;
+	xyz_master_cloud+= xyz_cloud3;
+
+    toROSMsg(xyz_master_cloud, this->master_cloud);
 }
 
 ////////////////////////////////////////////////////////////////

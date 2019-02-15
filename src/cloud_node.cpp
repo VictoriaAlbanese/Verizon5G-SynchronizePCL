@@ -17,7 +17,17 @@ int main(int argc, char ** argv)
 
     // Make the cloud & spin
     Cloud cloud(nh);
-    ros::spin();    
+
+	// Loop
+	while (ros::ok())
+	{
+		// concatenate the clouds
+		cloud.concatenate_clouds();
+		ROS_INFO("Master cloud is of size %zu", cloud.master_cloud.data.size());
+
+		// spin & sleep
+	    ros::spinOnce();    
+	}
 
   	return 0;
 }

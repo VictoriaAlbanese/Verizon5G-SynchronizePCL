@@ -34,7 +34,6 @@ class Cloud
         bool c1_initialized;
         bool c2_initialized;
         bool c3_initialized;
-		sensor_msgs::PointCloud2 master_cloud;
         sensor_msgs::PointCloud2 cloud1;
         sensor_msgs::PointCloud2 cloud2;
         sensor_msgs::PointCloud2 cloud3;
@@ -47,13 +46,16 @@ class Cloud
     	void cloud1_callback(const sensor_msgs::PointCloud2 msg);
         void cloud2_callback(const sensor_msgs::PointCloud2 msg);
         void cloud3_callback(const sensor_msgs::PointCloud2 msg);
+		bool initialized() { return c1_initialized && c2_initialized && c3_initialized; }
 
     public:
 
         // functions
         Cloud();
         Cloud(ros::NodeHandle handle);
-		bool initialized() { return c1_initialized && c2_initialized && c3_initialized; }
+		void concatenate_clouds();
+		
+		sensor_msgs::PointCloud2 master_cloud; // TODO make private
 };
 
 #endif // CLOUD_CLASS_HPP
