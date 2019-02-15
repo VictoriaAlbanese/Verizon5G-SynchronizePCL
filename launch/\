@@ -1,0 +1,37 @@
+<!--
+
+Programmer: Victoria Albanese
+Filename: multiple_sensors_pcl.launch
+
+Purpose: Launch multiple Intel RealSense 435i sensors
+so that the pointclouds they generate can be visualized
+
+-->
+
+<launch>
+
+	<!-- This launches each of the cameras with the correct parameters -->
+
+	<include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+		<arg name="camera" value="cam_1" />
+		<arg name="serial_no" value="843112074058" />
+	</include>
+
+	<include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+		<arg name="camera" value="cam_2" />
+		<arg name="serial_no" value="843112073834" />
+	</include>
+
+	<include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+		<arg name="camera" value="cam_3" />
+		<arg name="serial_no" value="843112073646" />
+	</include>
+
+
+	<!-- This launches RViz all setup to visualize them -->
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find realsense2_camera)/rviz/pointcloud.rviz" required="true" />
+
+	
+
+</launch>
+
