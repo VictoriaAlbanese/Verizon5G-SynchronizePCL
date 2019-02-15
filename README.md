@@ -13,6 +13,5 @@ Link to workback schedule:
 https://docs.google.com/document/d/12BnKNVyxTrnm_khGpx1uEfOzZHufALTI4eXlp_OsqoY/edit?usp=sharing
 
 
-Link to components list: 
-
+Link to components list:
 https://docs.google.com/document/d/1vUTn7-ItwGqKFwqI5CDbKsuCAlZOnFm2-jti4lPjo3o/edit?usp=sharing
