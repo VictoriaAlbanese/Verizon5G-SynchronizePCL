@@ -137,7 +137,9 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-#add_executable(cloud_node 	src/cloud_node.cpp)
+add_executable(cloud_node 	src/cloud_node.cpp
+							src/cloud_class.cpp
+							src/cloud_class.hpp)
 add_executable(concatenate_node src/concatenate.cpp)
 
 ## Rename C++ executable without prefix
@@ -152,6 +154,7 @@ add_executable(concatenate_node src/concatenate.cpp)
 
 ## Specify libraries to link a library or executable target against
 #target_link_libraries(cloud_node ${catkin_LIBRARIES})
+target_link_libraries(cloud_node ${catkin_LIBRARIES})
 target_link_libraries(concatenate_node ${catkin_LIBRARIES})
 
 #############
