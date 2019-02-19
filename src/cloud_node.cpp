@@ -11,25 +11,24 @@
 
 int main(int argc, char ** argv) 
 {
-	// Initialize ros
-	ros::init(argc, argv, "cloud_node");
-	ros::NodeHandle nh;
+    // Initialize ros
+    ros::init(argc, argv, "cloud_node");
+    ros::NodeHandle nh;
 
     // Make the cloud & spin
     Cloud cloud(nh);
 
-	// Loop
-	while (ros::ok())
-	{
-		// concatenate the clouds
-		cloud.concatenate_clouds();
-		ROS_INFO("Master cloud is of size %zu", cloud.master_cloud.data.size());
+    // Loop
+    while (ros::ok())
+    {
+        // concatenate the clouds
+        cloud.publish_master_cloud();
 
-		// spin & sleep
-	    ros::spinOnce();    
-	}
+        // spin & sleep
+        ros::spinOnce();    
+    }
 
-  	return 0;
+    return 0;
 }
 
 //////////////////////////////////////////////////////////////

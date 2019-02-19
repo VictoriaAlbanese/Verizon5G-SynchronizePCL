@@ -12,19 +12,12 @@
 #define CLOUD_CLASS_HPP
 
 #include <ros/ros.h>
-#include <pcl/common/transforms.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/transforms.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud_conversion.h>
-#include <tf/transform_listener.h>
 
 using namespace pcl;
-typedef pcl::PointXYZ PointXYZ;
 
 class Cloud 
 {
@@ -34,10 +27,11 @@ class Cloud
         bool c1_initialized;
         bool c2_initialized;
         bool c3_initialized;
-        sensor_msgs::PointCloud2 cloud1;
-        sensor_msgs::PointCloud2 cloud2;
-        sensor_msgs::PointCloud2 cloud3;
-        ros::Publisher cloud_pub;
+	PointCloud<PointXYZRGB> master_cloud;
+	PointCloud<PointXYZRGB> cloud1;
+	PointCloud<PointXYZRGB> cloud2;
+	PointCloud<PointXYZRGB> cloud3;
+        ros::Publisher  cloud_pub;
         ros::Subscriber cloud1_sub;
         ros::Subscriber cloud2_sub;
         ros::Subscriber cloud3_sub;
@@ -46,16 +40,15 @@ class Cloud
     	void cloud1_callback(const sensor_msgs::PointCloud2 msg);
         void cloud2_callback(const sensor_msgs::PointCloud2 msg);
         void cloud3_callback(const sensor_msgs::PointCloud2 msg);
-		bool initialized() { return c1_initialized && c2_initialized && c3_initialized; }
+	void concatenate_clouds();
+	bool initialized() { return c1_initialized && c2_initialized && c3_initialized; }
 
     public:
 
         // functions
         Cloud();
         Cloud(ros::NodeHandle handle);
-		void concatenate_clouds();
-		
-		sensor_msgs::PointCloud2 master_cloud; // TODO make private
+	void publish_master_cloud();	
 };
 
 #endif // CLOUD_CLASS_HPP

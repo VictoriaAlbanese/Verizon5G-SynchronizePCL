@@ -73,7 +73,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.00999999978
       Style: Points
-      Topic: /cam_1/depth_registered/points
+      Topic: /cam_1/depth_registered/points_filtered
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -102,8 +102,8 @@ Visualization Manager:
       Selectable: true
       Size (Pixels): 3
       Size (m): 0.00999999978
-      Style: Flat Squares
-      Topic: /cam_2/depth_registered/points
+      Style: Points
+      Topic: /cam_2/depth_registered/points_filtered
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -132,19 +132,19 @@ Visualization Manager:
       Selectable: true
       Size (Pixels): 3
       Size (m): 0.00999999978
-      Style: Flat Squares
-      Topic: /cam_3/depth_registered/points
+      Style: Points
+      Topic: /cam_3/depth_registered/points_filtered
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
     - Class: rviz/Axes
-      Enabled: true
+      Enabled: false
       Length: 1
       Name: Axes
       Radius: 0.100000001
       Reference Frame: <Fixed Frame>
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -170,7 +170,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 20.28372
+      Distance: 7.29472589
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -185,10 +185,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.530398488
+      Pitch: 0.640398622
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.86038756
+      Yaw: 3.26039076
     Saved:
       - Class: rviz/Orbit
         Distance: 17.1195183

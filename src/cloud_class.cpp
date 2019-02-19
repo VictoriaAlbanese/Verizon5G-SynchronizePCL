@@ -32,32 +32,23 @@ Cloud::Cloud(ros::NodeHandle handle)
     this->c3_initialized = false;
 
     this->cloud_pub = handle.advertise<sensor_msgs::PointCloud2>("combined_cloud", 1);
-	this->cloud1_sub = handle.subscribe("cam_1/depth_registered/points", 1, &Cloud::cloud1_callback, this);
-	this->cloud2_sub = handle.subscribe("cam_2/depth_registered/points", 1, &Cloud::cloud2_callback, this);
-	this->cloud3_sub = handle.subscribe("cam_3/depth_registered/points", 1, &Cloud::cloud3_callback, this);
+    this->cloud1_sub = handle.subscribe("cam_1/depth_registered/points_filtered", 1, &Cloud::cloud1_callback, this);
+    this->cloud2_sub = handle.subscribe("cam_2/depth_registered/points_filtered", 1, &Cloud::cloud2_callback, this);
+    this->cloud3_sub = handle.subscribe("cam_3/depth_registered/points_filtered", 1, &Cloud::cloud3_callback, this);
 
     while (!this->initialized()) ros::spinOnce();
 }
 
-// CONCATENATE CLOUDS FUNCTION
-// concatenates the (points | fields) of all the 
-// cloud members into the master pointcloud
-void Cloud::concatenate_clouds() 
+// PUBLISH MASTER CLOUD FUNCTION
+// this function converts the pcl XYZRGB cloud to a 
+// sensor_msg PointCloud2 for easy publishing
+void Cloud::publish_master_cloud() 
 {
-	PointCloud<PointXYZ> xyz_master_cloud;
-	PointCloud<PointXYZ> xyz_cloud1;
-	PointCloud<PointXYZ> xyz_cloud2;
-	PointCloud<PointXYZ> xyz_cloud3;
+    sensor_msgs::PointCloud2 cloud;
+    toROSMsg(this->master_cloud, cloud);
 
-	fromROSMsg(this->cloud1, xyz_cloud1);
-	fromROSMsg(this->cloud2, xyz_cloud2);
-	fromROSMsg(this->cloud3, xyz_cloud3);
-
-	xyz_master_cloud = xyz_cloud1;
-	xyz_master_cloud+= xyz_cloud2;
-	xyz_master_cloud+= xyz_cloud3;
-
-    toROSMsg(xyz_master_cloud, this->master_cloud);
+    this->concatenate_clouds();
+    this->cloud_pub.publish(cloud);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -65,36 +56,49 @@ void Cloud::concatenate_clouds()
 // Private Members & Callbacks
 
 // CLOUD1 CALLBACK FUNCTION
-// gets the information from the pointcloud associated with cam_1
-// adds that information to the master pointcloud & sets c1 as initialzied
+// initialize cloud1 with the information from cam_1
+// converts the cloud message to an pcl XYBRGB pointcloud 
 void Cloud::cloud1_callback(const sensor_msgs::PointCloud2 msg) 
 {
-    this->cloud1 = msg;
-	this->c1_initialized = true;
-	
-	ROS_INFO("Cloud 1 is of size %zu", this->cloud1.data.size());
+    fromROSMsg(msg, this->cloud1);
+    this->c1_initialized = true;
+    
+    ROS_INFO("Cloud 1 is in frame %s", this->cloud1.header.frame_id.c_str());
 }
 
 // CLOUD2 CALLBACK FUNCTION
-// gets the information from the pointcloud associated with cam_2
-// adds that information to the master pointcloud & sets c2 as initialzied
+// initialize cloud1 with the information from cam_2
+// converts the cloud message to an pcl XYBRGB pointcloud 
 void Cloud::cloud2_callback(const sensor_msgs::PointCloud2 msg) 
 {
-    this->cloud2 = msg;
-	this->c2_initialized = true;
-	
-	ROS_INFO("Cloud 2 is of size %zu", this->cloud2.data.size());
+    fromROSMsg(msg, this->cloud2);
+    this->c2_initialized = true;
+    
+    ROS_INFO("Cloud 2 is in frame %s", this->cloud2.header.frame_id.c_str());
 }
 
 // CLOUD3 CALLBACK FUNCTION
-// gets the information from the pointcloud associated with cam_3
-// adds that information to the master pointcloud & sets c3 as initialzied
+// initialize cloud1 with the information from cam_3
+// converts the cloud message to an pcl XYBRGB pointcloud 
 void Cloud::cloud3_callback(const sensor_msgs::PointCloud2 msg) 
 {
-    this->cloud3 = msg;
-	this->c3_initialized = true;
-	
-	ROS_INFO("Cloud 3 is of size %zu", this->cloud3.data.size());
+    fromROSMsg(msg, this->cloud3);
+    this->c3_initialized = true;
+    
+    ROS_INFO("Cloud 3 is in frame %s", this->cloud3.header.frame_id.c_str());
+}
+
+// CONCATENATE CLOUDS FUNCTION
+// concatenates the (points | fields) of all the 
+// cloud members into the master pointcloud
+void Cloud::concatenate_clouds() 
+{
+    // this concatenates the points
+    this->master_cloud = this->cloud1;
+    this->master_cloud+= this->cloud2;
+    this->master_cloud+= this->cloud3;
+
+    ROS_INFO("MasterC is in frame %s", this->master_cloud.header.frame_id.c_str());
 }
 
 ////////////////////////////////////////////////////////////////

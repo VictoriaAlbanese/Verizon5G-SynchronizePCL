@@ -10,39 +10,108 @@ so that the pointclouds they generate can be visualized
 
 <launch>
 
-	<!-- This launches each of the cameras with the correct parameters -->
-
-	<include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
-		<arg name="camera" value="cam_1" />
-		<arg name="serial_no" value="843112074058" />
-	</include>
-
-	<include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
-		<arg name="camera" value="cam_2" />
-		<arg name="serial_no" value="843112073834" />
-	</include>
-
-	<include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
-		<arg name="camera" value="cam_3" />
-		<arg name="serial_no" value="843112073646" />
-	</include>
+    <!-- This launches each of the cameras with the correct parameters -->
+    <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+	<arg name="camera" value="cam_1" />
+	<arg name="serial_no" value="843112074058" />
+    </include>
+    <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+	<arg name="camera" value="cam_2" />
+	<arg name="serial_no" value="843112073834" />
+    </include>
+    <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+	<arg name="camera" value="cam_3" />
+	<arg name="serial_no" value="843112073646" />
+    </include>
 
 
-	<!-- This transforms each resulting pointcloud into a global reference frame -->
-
+    <!-- This transforms each resulting pointcloud into a global reference frame -->
     <node name="camera_1_tf" pkg="tf" type="static_transform_publisher"
-        args="0 0 2 0 0 0 /world /cam_1_link 100"/>
-
-	
+        args="0 0 1 0 0 0 /world /cam_1_link 100"/>
     <node name="camera_2_tf" pkg="tf" type="static_transform_publisher"
         args="0 0 0 0 0 0 /world /cam_2_link 100"/>
-
     <node name="camera_3_tf" pkg="tf" type="static_transform_publisher"
-        args="0 0 -2 0 0 0 /world /cam_3_link 100"/>
-	
+        args="0 0 -1 0 0 0 /world /cam_3_link 100"/>
 
-	<!-- This launches RViz all setup to visualize them -->
-	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find synchronize_pointclouds)/rviz/pointclouds.rviz" required="true" />
+
+    <!-- This node manages all of the incoming passthrough filter nodelets -->
+    <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" />
+
+
+    <!-- These nodelets limit the FOV of the sensors to 1.2 meters each -->
+    <node pkg="nodelet" type="nodelet" name="cloud1_fov_filter" args="load pcl/PassThrough pcl_manager" output="screen">
+        <remap from="~input"  to="/cam_1/depth_registered/points"/>
+        <remap from="~output" to="/cam_1/depth_registered/points_filtered"/>
+        <rosparam>
+            filter_field_name: z
+            filter_limit_min: 0.1
+            filter_limit_max: 1.2
+            filter_limit_negative: False
+        </rosparam>
+    </node>	
+    <node pkg="nodelet" type="nodelet" name="cloud2_fov_filter" args="load pcl/PassThrough pcl_manager" output="screen">
+        <remap from="~input"  to="/cam_2/depth_registered/points"/>
+        <remap from="~output" to="/cam_2/depth_registered/points_filtered"/>
+        <rosparam>
+            filter_field_name: z
+            filter_limit_min: 0.1
+            filter_limit_max: 1.2
+            filter_limit_negative: False
+        </rosparam>
+    </node>	
+    <node pkg="nodelet" type="nodelet" name="cloud3_fov_filter" args="load pcl/PassThrough pcl_manager" output="screen">
+        <remap from="~input"  to="/cam_3/depth_registered/points"/>
+        <remap from="~output" to="/cam_3/depth_registered/points_filtered"/>
+        <rosparam>
+            filter_field_name: z
+            filter_limit_min: 0.1
+            filter_limit_max: 1.2
+            filter_limit_negative: False
+        </rosparam>
+    </node>	
+
+
+    <!-- These nodelets filter out the ground plane -->
+    <!--
+    <node pkg="nodelet" type="nodelet" name="cloud1_ground_filter" args="load pcl/PassThrough pcl_manager" output="screen">
+        <remap from="~input"  to="/cam_1/depth_registered/points_intermediate"/>
+        <remap from="~output" to="/cam_1/depth_registered/points_filtered"/>
+        <rosparam>
+            filter_field_name: y
+            filter_limit_min: 0.05
+            filter_limit_max: 1.2
+            filter_limit_negative: True
+        </rosparam>
+    </node>	
+    <node pkg="nodelet" type="nodelet" name="cloud2_ground_filter" args="load pcl/PassThrough pcl_manager" output="screen">
+        <remap from="~input"  to="/cam_2/depth_registered/points_intermediate"/>
+        <remap from="~output" to="/cam_2/depth_registered/points_filtered"/>
+        <rosparam>
+            filter_field_name: z
+            filter_limit_min: 0.1
+            filter_limit_max: 1.2
+            filter_limit_negative: False
+        </rosparam>
+    </node>	
+    <node pkg="nodelet" type="nodelet" name="cloud3_ground_filter" args="load pcl/PassThrough pcl_manager" output="screen">
+        <remap from="~input"  to="/cam_3/depth_registered/points_intermediate"/>
+        <remap from="~output" to="/cam_3/depth_registered/points_filtered"/>
+        <rosparam>
+            filter_field_name: z
+            filter_limit_min: 0.1
+            filter_limit_max: 1.2
+            filter_limit_negative: False
+        </rosparam>
+    </node>	
+    -->
+
+  
+    <!-- This runs the node which concatenates the clouds -->
+    <node name="concatenate" pkg="synchronize_pointclouds" type="cloud_node" required="true" />
+
+
+    <!-- This launches RViz all setup to visualize them -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find synchronize_pointclouds)/rviz/pointclouds.rviz" required="true" />
 
 </launch>
 
