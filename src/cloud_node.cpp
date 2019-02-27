@@ -3,28 +3,28 @@
 // Programmer: Victoria Albanese
 // Filename: cloud_node.cpp
 //
-// Purpose: Convert a depth cloud to a pointcloud
+// Purpose: This is the main driver; a cloud is created 
+// and a mesh is outputted via the inner workings of that 
+// cloud object
 //
 //////////////////////////////////////////////////////////////
 
+#include <iostream>
 #include "cloud_class.hpp"
+
+using namespace std;
 
 int main(int argc, char ** argv) 
 {
-    // Initialize ros
     ros::init(argc, argv, "cloud_node");
     ros::NodeHandle nh;
 
-    // Make the cloud & spin
     Cloud cloud(nh);
 
-    // Loop
     while (ros::ok())
     {
-        // concatenate the clouds
         cloud.publish_master_cloud();
-
-        // spin & sleep
+        cloud.output_file(VTK);
         ros::spinOnce();    
     }
 

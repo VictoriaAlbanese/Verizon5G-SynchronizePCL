@@ -11,37 +11,57 @@
 #ifndef CLOUD_CLASS_HPP
 #define CLOUD_CLASS_HPP
 
-#include <ros/ros.h>
+#include <boost/filesystem.hpp>
+#include <cstring>
+#include <ctime> 
+#include <pcl/features/normal_3d.h>
+#include <pcl/io/vtk_io.h>
+#include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/surface/gp3.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <ros/package.h>
+#include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#define VTK 0
+
 using namespace pcl;
+using namespace std;
 
 class Cloud 
 {
     private: 
 
         // members
-        bool c1_initialized;
-        bool c2_initialized;
-        bool c3_initialized;
-	PointCloud<PointXYZRGB> master_cloud;
-	PointCloud<PointXYZRGB> cloud1;
-	PointCloud<PointXYZRGB> cloud2;
-	PointCloud<PointXYZRGB> cloud3;
+        PolygonMesh master_mesh;
+	PointCloud<PointXYZ> master_cloud;
+	PointCloud<PointXYZ> cloud_front;
+	PointCloud<PointXYZ> cloud_back;
+	PointCloud<PointXYZ> cloud_left;
+	PointCloud<PointXYZ> cloud_right;
+        bool front_initialized;
+        bool back_initialized;
+        bool left_initialized;
+        bool right_initialized;
         ros::Publisher  cloud_pub;
-        ros::Subscriber cloud1_sub;
-        ros::Subscriber cloud2_sub;
-        ros::Subscriber cloud3_sub;
+        ros::Subscriber cloud_front_sub;
+        ros::Subscriber cloud_back_sub;
+        ros::Subscriber cloud_left_sub;
+        ros::Subscriber cloud_right_sub;
+        int counter;
+        string timestamp; 
 
         // functions
-    	void cloud1_callback(const sensor_msgs::PointCloud2 msg);
-        void cloud2_callback(const sensor_msgs::PointCloud2 msg);
-        void cloud3_callback(const sensor_msgs::PointCloud2 msg);
+    	void cloud_front_callback(const sensor_msgs::PointCloud2 msg);
+        void cloud_back_callback(const sensor_msgs::PointCloud2 msg);
+        void cloud_left_callback(const sensor_msgs::PointCloud2 msg);
+        void cloud_right_callback(const sensor_msgs::PointCloud2 msg);
 	void concatenate_clouds();
-	bool initialized() { return c1_initialized && c2_initialized && c3_initialized; }
+        void triangulate_clouds();
+	bool initialized() { return front_initialized && back_initialized && left_initialized && right_initialized; }
+        string get_timestamp();
 
     public:
 
@@ -49,6 +69,7 @@ class Cloud
         Cloud();
         Cloud(ros::NodeHandle handle);
 	void publish_master_cloud();	
+        void output_file(int file_format);
 };
 
 #endif // CLOUD_CLASS_HPP

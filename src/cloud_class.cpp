@@ -18,25 +18,37 @@
 // does not do ros initialization
 Cloud::Cloud() 
 {
-    this->c1_initialized = false;
-    this->c2_initialized = false;
-    this->c3_initialized = false;
+    this->front_initialized = false;
+    this->back_initialized = false;
+    this->left_initialized = false;
+    this->right_initialized = false;
+
+    this->counter = 1;
+    this->timestamp = get_timestamp();
 }
 
 // CONSTRUCTOR
 // does the ros initialization
 Cloud::Cloud(ros::NodeHandle handle) 
 {
-    this->c1_initialized = false;
-    this->c2_initialized = false;
-    this->c3_initialized = false;
+    this->front_initialized = false;
+    this->back_initialized = true; //false;
+    this->left_initialized = true; //false;
+    this->right_initialized = true; //false;
+
+    this->counter = 1;
+    this->timestamp = get_timestamp();
 
     this->cloud_pub = handle.advertise<sensor_msgs::PointCloud2>("combined_cloud", 1);
-    this->cloud1_sub = handle.subscribe("cam_1/depth_registered/points_filtered", 1, &Cloud::cloud1_callback, this);
-    this->cloud2_sub = handle.subscribe("cam_2/depth_registered/points_filtered", 1, &Cloud::cloud2_callback, this);
-    this->cloud3_sub = handle.subscribe("cam_3/depth_registered/points_filtered", 1, &Cloud::cloud3_callback, this);
+    this->cloud_front_sub = handle.subscribe("camera_front/depth_registered/points_filtered", 1, &Cloud::cloud_front_callback, this);
+    this->cloud_back_sub = handle.subscribe("camera_back/depth_registered/points_filtered", 1, &Cloud::cloud_back_callback, this);
+    this->cloud_left_sub = handle.subscribe("camera_left/depth_registered/points_filtered", 1, &Cloud::cloud_left_callback, this);
+    this->cloud_right_sub = handle.subscribe("camera_right/depth_registered/points_filtered", 1, &Cloud::cloud_right_callback, this);
 
     while (!this->initialized()) ros::spinOnce();
+    
+    this->concatenate_clouds();
+    this->triangulate_clouds();
 }
 
 // PUBLISH MASTER CLOUD FUNCTION
@@ -47,58 +59,143 @@ void Cloud::publish_master_cloud()
     sensor_msgs::PointCloud2 cloud;
     toROSMsg(this->master_cloud, cloud);
 
-    this->concatenate_clouds();
     this->cloud_pub.publish(cloud);
+}
+
+// OUTPUT FILE FUNCTION
+// this function converts the polymesh to a parsable file format
+// current options for output file formats include
+//      - 0 : VTK
+void Cloud::output_file(int file_format) 
+{
+    // find the path to the package  
+    std::stringstream path;
+    path << ros::package::getPath("synchronize_pointclouds");
+    path << "/object_models";
+    boost::filesystem::create_directory(path.str() + "/model_" + this->timestamp);
+   
+    // fill out the rest of the path
+    path << "/model_" << this->timestamp;
+    path << "/object_model_";
+    path << this->counter++;
+    path << ".vtk";
+
+    // make the file
+    if (file_format == VTK) 
+    {
+        io::saveVTKFile(path.str(), this->master_mesh); 
+        ROS_INFO("Saving object model to %s", path.str().c_str());
+    }
 }
 
 ////////////////////////////////////////////////////////////////
 
 // Private Members & Callbacks
 
-// CLOUD1 CALLBACK FUNCTION
-// initialize cloud1 with the information from cam_1
-// converts the cloud message to an pcl XYBRGB pointcloud 
-void Cloud::cloud1_callback(const sensor_msgs::PointCloud2 msg) 
+// CLOUD FRONT CALLBACK FUNCTION
+// initialize cloud front with the information from camera_front
+// converts the cloud message to a pcl XYZRGB pointcloud 
+void Cloud::cloud_front_callback(const sensor_msgs::PointCloud2 msg) 
 {
-    fromROSMsg(msg, this->cloud1);
-    this->c1_initialized = true;
-    
-    ROS_INFO("Cloud 1 is in frame %s", this->cloud1.header.frame_id.c_str());
+    fromROSMsg(msg, this->cloud_front);
+    this->front_initialized = true;
 }
 
-// CLOUD2 CALLBACK FUNCTION
-// initialize cloud1 with the information from cam_2
-// converts the cloud message to an pcl XYBRGB pointcloud 
-void Cloud::cloud2_callback(const sensor_msgs::PointCloud2 msg) 
+// CLOUD BACK CALLBACK FUNCTION
+// initialize cloud back with the information from camera_back
+// converts the cloud message to a pcl XYZRGB pointcloud 
+void Cloud::cloud_back_callback(const sensor_msgs::PointCloud2 msg) 
 {
-    fromROSMsg(msg, this->cloud2);
-    this->c2_initialized = true;
-    
-    ROS_INFO("Cloud 2 is in frame %s", this->cloud2.header.frame_id.c_str());
+    fromROSMsg(msg, this->cloud_back);
+    this->back_initialized = true;
 }
 
-// CLOUD3 CALLBACK FUNCTION
-// initialize cloud1 with the information from cam_3
-// converts the cloud message to an pcl XYBRGB pointcloud 
-void Cloud::cloud3_callback(const sensor_msgs::PointCloud2 msg) 
+// CLOUD LEFT CALLBACK FUNCTION
+// initialize cloud left with the information from camera_left
+// converts the cloud message to a pcl XYZRGB pointcloud 
+void Cloud::cloud_left_callback(const sensor_msgs::PointCloud2 msg) 
 {
-    fromROSMsg(msg, this->cloud3);
-    this->c3_initialized = true;
-    
-    ROS_INFO("Cloud 3 is in frame %s", this->cloud3.header.frame_id.c_str());
+    fromROSMsg(msg, this->cloud_left);
+    this->left_initialized = true;
+}
+
+// CLOUD RIGHT CALLBACK FUNCTION
+// initialize cloud right with the information from camera_right
+// converts the cloud message to a pcl XYZRGB pointcloud 
+void Cloud::cloud_right_callback(const sensor_msgs::PointCloud2 msg) 
+{
+    fromROSMsg(msg, this->cloud_right);
+    this->right_initialized = true;
 }
 
 // CONCATENATE CLOUDS FUNCTION
-// concatenates the (points | fields) of all the 
+// concatenates the points of all the 
 // cloud members into the master pointcloud
 void Cloud::concatenate_clouds() 
 {
-    // this concatenates the points
-    this->master_cloud = this->cloud1;
-    this->master_cloud+= this->cloud2;
-    this->master_cloud+= this->cloud3;
+    this->master_cloud = this->cloud_front;
+    this->master_cloud+= this->cloud_back;
+    this->master_cloud+= this->cloud_left;
+    this->master_cloud+= this->cloud_right;
+}
 
-    ROS_INFO("MasterC is in frame %s", this->master_cloud.header.frame_id.c_str());
+// TRIANGULATE CLOUD FUNCTION
+// creates a mesh from all the clouds
+void Cloud::triangulate_clouds() 
+{
+    // put the master cloud in a pointer
+    PointCloud<PointXYZ>::Ptr cloud(new PointCloud<PointXYZ>);
+    *cloud = this->master_cloud;
+    
+    // normal estimation
+    NormalEstimation<PointXYZ, Normal> n;                                       // create a normal estimator utility
+    PointCloud<Normal>::Ptr normals(new PointCloud<Normal>);                    // create a recepticle for the normals
+    search::KdTree<PointXYZ>::Ptr normal_tree(new search::KdTree<PointXYZ>);    // create a receptical for the search tree
+    normal_tree->setInputCloud(cloud);                                          // initialize the tree's cloud
+    n.setInputCloud(cloud);                                                     // initialize the normal calculator's cloud
+    n.setSearchMethod (normal_tree);                                            // initialize the normal caclulator's tree
+    n.setKSearch (20);                                                          // TODO: find out what this parameter does
+    n.compute (*normals);                                                       // compute the normals of the cloud with the calculator
+
+    // concatenate the XYZ and normal fields
+    PointCloud<PointNormal>::Ptr normal_cloud(new PointCloud<PointNormal>);     // create a recepticle for the comnbined xyz and normal information
+    concatenateFields(this->master_cloud, *normals, *normal_cloud);             // combine the normal and xyz information
+
+    // create search tree
+    search::KdTree<PointNormal>::Ptr mesh_tree(new search::KdTree<PointNormal>);   
+    mesh_tree->setInputCloud(normal_cloud);                                  
+
+    // set typical values for triangulation parameters
+    GreedyProjectionTriangulation<pcl::PointNormal> gp3;        // make a greedy projection triangulation object
+    gp3.setSearchRadius (0.025);                                // set the maximum edge length between connected points (mm?)
+    gp3.setMu (2.5);                                            // maximum distance for a point to be considered relative to the distance to the nearest point
+    gp3.setMaximumNearestNeighbors (100);                       // defines how many neighbors are searched for
+    gp3.setMinimumAngle(M_PI/18);                               //  10 degrees : minimum angle in each triangle
+    gp3.setMaximumAngle(2*M_PI/3);                              // 120 degrees : maximim angle in each triangle
+    gp3.setMaximumSurfaceAngle(M_PI/4);                         //  45 degrees : helps keep jarring transitions smooth 
+    gp3.setNormalConsistency(false);                            // also helps keep jarring transitions smooth
+
+    // produce mesh
+    gp3.setInputCloud(normal_cloud);    // initialize the input cloud of the gp3
+    gp3.setSearchMethod(mesh_tree);     // initialize the input tree of the gp3
+    gp3.reconstruct(this->master_mesh); // triangulize that shit
+}
+
+
+// GET TIMESTAMP FUNCTION
+// This function gets the current date & time and returns it as a string  
+string Cloud::get_timestamp()
+{
+    char buffer[80];
+    time_t t; 
+    struct tm* now; 
+
+    time(&t); 
+    now = localtime(&t); 
+    strftime(buffer, 80, "%Y-%m-%d-%T", now);
+    string timestamp(buffer);
+
+    return timestamp;
 }
 
 ////////////////////////////////////////////////////////////////

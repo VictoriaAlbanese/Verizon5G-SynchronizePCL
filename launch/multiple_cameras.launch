@@ -1,0 +1,34 @@
+<!--
+
+Programmer: Victoria Albanese
+Filename: multiple_cameras.launch
+
+Purpose: Launch multiple Intel RealSense 435i sensors
+so that the pointclouds they generate can be visualized
+
+-->
+
+<launch>
+
+    <!-- This node manages all of the incoming passthrough filter nodelets -->
+    <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" />
+
+
+    <!-- This launches each of the cameras with parameters given in separate launchfiles -->
+    <include file="$(find synchronize_pointclouds)/launch/camera_front.launch" />
+    <include file="$(find synchronize_pointclouds)/launch/camera_back.launch"  />
+    <include file="$(find synchronize_pointclouds)/launch/camera_left.launch"  />
+    <include file="$(find synchronize_pointclouds)/launch/camera_right.launch" />
+
+  
+    <!-- This runs the node which concatenates the clouds -->
+    <!--
+    <node name="concatenate" pkg="synchronize_pointclouds" type="cloud_node" required="true" />
+    -->    
+
+
+    <!-- This launches RViz all setup to visualize them -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find synchronize_pointclouds)/rviz/pointclouds.rviz" required="true" />
+
+</launch>
+
