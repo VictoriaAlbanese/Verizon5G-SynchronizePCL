@@ -16,7 +16,7 @@
 
 // DEFAULT CONSTRUCTOR
 // does not do ros initialization
-Cloud::Cloud()
+Cloud::Cloud() 
 {
     this->front_initialized = false;
     this->back_initialized = false;
@@ -29,7 +29,7 @@ Cloud::Cloud()
 
 // CONSTRUCTOR
 // does the ros initialization
-Cloud::Cloud(ros::NodeHandle handle)
+Cloud::Cloud(ros::NodeHandle handle) 
 {
     this->front_initialized = false;
     this->back_initialized = false;
@@ -99,11 +99,15 @@ void Cloud::cloud_front_callback(sensor_msgs::PointCloud2 msg)
 {
     fromROSMsg(msg, this->cloud_front);
 
-    ros::Time stamp;
-    pcl_conversions::toPCL(stamp, this->cloud_front.header.stamp);
-    this->tf_listener.waitForTransform("/world", this->cloud_front.header.frame_id, stamp, ros::Duration(10.0));
+    //tf::StampedTransform transform;
+    const std::string target_frame = "/world";
+    const std::string source_frame = this->cloud_front.header.frame_id;
+
+    //this->tf_listener.waitForTransform("/world", this->cloud_front.header.frame_id, this->cloud_front.header.stamp, ros::Duration(5.0));
+    //this->tf_listener.lookupTransform("/world", this->cloud_front.header.frame_id, this->cloud_front.header.stamp, transform);
     pcl_ros::transformPointCloud("/world", this->cloud_front, this->cloud_front, this->tf_listener);
 
+    ROS_INFO("%s", this->cloud_front.header.frame_id.c_str());
     this->front_initialized = true;
 }
 
@@ -113,12 +117,6 @@ void Cloud::cloud_front_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::cloud_back_callback(const sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud_back);
- 
-    ros::Time stamp;
-    pcl_conversions::toPCL(stamp, this->cloud_back.header.stamp);
-    this->tf_listener.waitForTransform("/world", this->cloud_back.header.frame_id, stamp, ros::Duration(10.0));
-    pcl_ros::transformPointCloud("/world", this->cloud_back, this->cloud_back, this->tf_listener);
-    
     this->back_initialized = true;
 }
 
@@ -128,12 +126,6 @@ void Cloud::cloud_back_callback(const sensor_msgs::PointCloud2 msg)
 void Cloud::cloud_left_callback(const sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud_left);
- 
-    ros::Time stamp;
-    pcl_conversions::toPCL(stamp, this->cloud_left.header.stamp);
-    this->tf_listener.waitForTransform("/world", this->cloud_left.header.frame_id, stamp, ros::Duration(10.0));
-    pcl_ros::transformPointCloud("/world", this->cloud_left, this->cloud_left, this->tf_listener);
-
     this->left_initialized = true;
 }
 
@@ -143,12 +135,6 @@ void Cloud::cloud_left_callback(const sensor_msgs::PointCloud2 msg)
 void Cloud::cloud_right_callback(const sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud_right);
- 
-    ros::Time stamp;
-    pcl_conversions::toPCL(stamp, this->cloud_right.header.stamp);
-    this->tf_listener.waitForTransform("/world", this->cloud_right.header.frame_id, stamp, ros::Duration(10.0));
-    pcl_ros::transformPointCloud("/world", this->cloud_right, this->cloud_right, this->tf_listener);
-
     this->right_initialized = true;
 }
 

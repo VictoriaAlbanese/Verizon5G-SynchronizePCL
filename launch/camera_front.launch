@@ -52,8 +52,19 @@ on the rigging so that its pointcloud can be visualized
             filter_limit_negative: False
         </rosparam>
     </node>	
-    <node pkg="nodelet" type="nodelet" name="cloud_front_outlier_removal" args="load pcl/StatisticalOutlierRemoval pcl_manager" output="screen"> 
+
+    <node pkg="nodelet" type="nodelet" name="cloud_front_outlier_removal_pass1" args="load pcl/StatisticalOutlierRemoval pcl_manager" output="screen"> 
         <remap from="~input"  to="/camera_front/depth_registered/points_filtered_ground_plane" /> 
+        <remap from="~output" to="/camera_front/depth_registered/points_filtered_pass1" /> 
+        <rosparam> 
+               mean_k: 100 
+               stddev: 0.01 
+               negative: False 
+        </rosparam> 
+    </node> 
+
+    <node pkg="nodelet" type="nodelet" name="cloud_front_outlier_removal" args="load pcl/StatisticalOutlierRemoval pcl_manager" output="screen"> 
+        <remap from="~input"  to="/camera_front/depth_registered/points_filtered_pass1" /> 
         <remap from="~output" to="/camera_front/depth_registered/points_filtered" /> 
         <rosparam> 
                mean_k: 100 

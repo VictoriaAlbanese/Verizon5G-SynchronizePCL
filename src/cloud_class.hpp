@@ -21,14 +21,17 @@
 #include <pcl/point_types.h>
 #include <pcl/surface/gp3.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/transforms.h>
 #include <ros/package.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <tf/transform_listener.h>
 
 #define VTK 0
 
 using namespace pcl;
 using namespace std;
+using namespace tf;
 
 class Cloud 
 {
@@ -50,11 +53,12 @@ class Cloud
         ros::Subscriber cloud_back_sub;
         ros::Subscriber cloud_left_sub;
         ros::Subscriber cloud_right_sub;
+        TransformListener tf_listener;
         int counter;
         string timestamp; 
 
         // functions
-    	void cloud_front_callback(const sensor_msgs::PointCloud2 msg);
+    	void cloud_front_callback(sensor_msgs::PointCloud2 msg);
         void cloud_back_callback(const sensor_msgs::PointCloud2 msg);
         void cloud_left_callback(const sensor_msgs::PointCloud2 msg);
         void cloud_right_callback(const sensor_msgs::PointCloud2 msg);
