@@ -14,7 +14,7 @@
 
 using namespace std;
 
-int main(int argc, char ** argv) 
+int main(int argc, char * argv[]) 
 {
     ros::init(argc, argv, "cloud_node");
     ros::NodeHandle nh;
@@ -24,7 +24,10 @@ int main(int argc, char ** argv)
     while (ros::ok())
     {
         cloud.publish_master_cloud();
-        cloud.output_file(VTK);
+    
+        if (argc == 2) cloud.output_file(argv[1]);
+        else cloud.output_file();
+    
         ros::spinOnce();    
     }
 

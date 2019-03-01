@@ -15,7 +15,7 @@
 #include <cstring>
 #include <ctime> 
 #include <pcl/features/normal_3d.h>
-#include <pcl/io/vtk_io.h>
+#include <pcl/io/obj_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -26,8 +26,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_listener.h>
-
-#define VTK 0
 
 using namespace pcl;
 using namespace std;
@@ -73,7 +71,7 @@ class Cloud
         Cloud();
         Cloud(ros::NodeHandle handle);
 	void publish_master_cloud();	
-        void output_file(int file_format);
+        void output_file(string model_name = "model");
 };
 
 #endif // CLOUD_CLASS_HPP

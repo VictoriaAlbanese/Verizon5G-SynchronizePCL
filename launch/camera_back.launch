@@ -65,7 +65,8 @@ on the rigging so that its pointcloud can be visualized
 
     <!-- This transforms each resulting pointcloud into a global reference frame -->
     <node name="camera_back_tf" pkg="tf" type="static_transform_publisher"
-        args="0.040 0.299 0.098 3.141 0 -1.60 /world /camera_back_color_optical_frame 100"/>
+        args="0.027 0.305 0.098 3.141 0 -1.60 /world /camera_back_color_optical_frame 100"/>
+
 
 </launch>
 

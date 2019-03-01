@@ -66,26 +66,19 @@ void Cloud::publish_master_cloud()
 // this function converts the polymesh to a parsable file format
 // current options for output file formats include
 //      - 0 : VTK
-void Cloud::output_file(int file_format) 
+void Cloud::output_file(string model_name) 
 {
-    // find the path to the package  
     std::stringstream path;
     path << ros::package::getPath("synchronize_pointclouds");
-    path << "/object_models";
-    boost::filesystem::create_directory(path.str() + "/model_" + this->timestamp);
+    path << "/object_models/";
+    path << model_name << "_" << this->timestamp << ".obj";
+    
+    // make a directory for multiple model files
+    // boost::filesystem::create_directory(path.str() + "/model_" + this->timestamp);
+    // path << "/model_" << this->timestamp;
    
-    // fill out the rest of the path
-    path << "/model_" << this->timestamp;
-    path << "/object_model_";
-    path << this->counter++;
-    path << ".vtk";
-
-    // make the file
-    if (file_format == VTK) 
-    {
-        io::saveVTKFile(path.str(), this->master_mesh); 
-        ROS_INFO("Saving object model to %s", path.str().c_str());
-    }
+    io::saveOBJFile(path.str(), this->master_mesh); 
+    cout << ".";
 }
 
 ////////////////////////////////////////////////////////////////
@@ -216,7 +209,7 @@ string Cloud::get_timestamp()
 
     time(&t); 
     now = localtime(&t); 
-    strftime(buffer, 80, "%Y-%m-%d-%T", now);
+    strftime(buffer, 80, "%Y-%m-%H%M%S", now);
     string timestamp(buffer);
 
     return timestamp;
