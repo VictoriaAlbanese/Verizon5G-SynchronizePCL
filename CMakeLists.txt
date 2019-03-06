@@ -140,6 +140,7 @@ include_directories(
 add_executable(cloud_node src/cloud_node.cpp src/cloud_class.cpp src/cloud_class.hpp)
 add_executable(concatenate_node src/concatenate.cpp)
 add_executable(triangulate_node src/triangulate.cpp)
+add_executable(resample_node src/resampling.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -156,6 +157,7 @@ add_executable(triangulate_node src/triangulate.cpp)
 target_link_libraries(cloud_node ${catkin_LIBRARIES})
 target_link_libraries(concatenate_node ${catkin_LIBRARIES})
 target_link_libraries(triangulate_node ${catkin_LIBRARIES})
+target_link_libraries(resample_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##

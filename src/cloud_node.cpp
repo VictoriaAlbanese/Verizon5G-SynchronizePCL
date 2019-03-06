@@ -16,6 +16,9 @@ using namespace std;
 
 int main(int argc, char * argv[]) 
 {
+    int i;
+    for (i = 0; i < argc; i++) cout << argc << " " << argv[argc] << endl;
+
     ros::init(argc, argv, "cloud_node");
     ros::NodeHandle nh;
 
@@ -28,6 +31,7 @@ int main(int argc, char * argv[])
         if (argc == 2) cloud.output_file(argv[1]);
         else cloud.output_file();
     
+        cout << ".";
         ros::spinOnce();    
     }
 

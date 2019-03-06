@@ -78,7 +78,6 @@ void Cloud::output_file(string model_name)
     // path << "/model_" << this->timestamp;
    
     io::saveOBJFile(path.str(), this->master_mesh); 
-    cout << ".";
 }
 
 ////////////////////////////////////////////////////////////////
