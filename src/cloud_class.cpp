@@ -44,11 +44,9 @@ Cloud::Cloud(ros::NodeHandle handle)
     this->cloud_back_sub = handle.subscribe("camera_back/depth_registered/points_filtered", 1, &Cloud::cloud_back_callback, this);
     this->cloud_left_sub = handle.subscribe("camera_left/depth_registered/points_filtered", 1, &Cloud::cloud_left_callback, this);
     this->cloud_right_sub = handle.subscribe("camera_right/depth_registered/points_filtered", 1, &Cloud::cloud_right_callback, this);
+    this->cloud_top_sub = handle.subscribe("camera_top/depth_registered/points_filtered", 1, &Cloud::cloud_top_callback, this);
 
     while (!this->initialized()) ros::spinOnce();
-    
-    this->concatenate_clouds();
-    this->triangulate_clouds();
 }
 
 // PUBLISH MASTER CLOUD FUNCTION
@@ -62,10 +60,53 @@ void Cloud::publish_master_cloud()
     this->cloud_pub.publish(cloud);
 }
 
+// CONCATENATE CLOUDS FUNCTION
+// concatenates the points of all the 
+// cloud members into the master pointcloud
+void Cloud::concatenate_clouds() 
+{
+    PointCloud<PointXYZ>::Ptr temp_cloud(new PointCloud<PointXYZ>);
+    
+    *temp_cloud = this->cloud_front;
+    *temp_cloud+= this->cloud_back;
+    *temp_cloud+= this->cloud_left;
+    *temp_cloud+= this->cloud_right;
+    *temp_cloud+= this->cloud_top;
+
+    *temp_cloud = this->voxel_filter(temp_cloud);
+    this->master_cloud = this->move_least_squares(temp_cloud); 
+}
+
+// TRIANGULATE CLOUD FUNCTION
+// creates a mesh from all the clouds
+void Cloud::triangulate_clouds() 
+{
+    // concatenate the XYZ and normal fields
+    PointCloud<PointNormal>::Ptr normal_cloud(new PointCloud<PointNormal>);
+    *normal_cloud = this->master_cloud;
+
+    // create search tree
+    search::KdTree<PointNormal>::Ptr mesh_tree(new search::KdTree<PointNormal>);   
+    mesh_tree->setInputCloud(normal_cloud);                                  
+
+    // set typical values for triangulation parameters
+    GreedyProjectionTriangulation<pcl::PointNormal> gp3;        // make a greedy projection triangulation object
+    gp3.setSearchRadius(0.025);                                 // set the maximum edge length between connected points (mm?)
+    gp3.setMu(2.5);                                             // maximum distance for a point to be considered relative to the distance to the nearest point
+    gp3.setMaximumNearestNeighbors(200);                        // defines how many neighbors are searched for
+    gp3.setMinimumAngle(M_PI/18);                               //  10 degrees : minimum angle in each triangle
+    gp3.setMaximumAngle(5*M_PI/6);                              // 150 degrees : maximim angle in each triangle
+    gp3.setMaximumSurfaceAngle(M_PI/4);                         //  45 degrees : helps keep jarring transitions smooth 
+    gp3.setNormalConsistency(true);                             // also helps keep jarring transitions smooth
+
+    // produce mesh
+    gp3.setInputCloud(normal_cloud);    // initialize the input cloud of the gp3
+    gp3.setSearchMethod(mesh_tree);     // initialize the input tree of the gp3
+    gp3.reconstruct(this->master_mesh); // triangulize that shit
+}
+
 // OUTPUT FILE FUNCTION
 // this function converts the polymesh to a parsable file format
-// current options for output file formats include
-//      - 0 : VTK
 void Cloud::output_file(string model_name) 
 {
     std::stringstream path;
@@ -83,6 +124,16 @@ void Cloud::output_file(string model_name)
 ////////////////////////////////////////////////////////////////
 
 // Private Members & Callbacks
+
+// INITIALIZED FUNCTION
+// this function checks that all the pointclouds are initialized
+bool Cloud::initialized() 
+{ 
+    return (this->front_initialized 
+            && this->back_initialized 
+            && this->left_initialized 
+            && this->right_initialized); 
+}
 
 // CLOUD FRONT CALLBACK FUNCTION
 // initialize cloud front with the information from camera_front
@@ -144,59 +195,52 @@ void Cloud::cloud_right_callback(const sensor_msgs::PointCloud2 msg)
     this->right_initialized = true;
 }
 
-// CONCATENATE CLOUDS FUNCTION
-// concatenates the points of all the 
-// cloud members into the master pointcloud
-void Cloud::concatenate_clouds() 
+// CLOUD TOP CALLBACK FUNCTION
+// initialize cloud top with the information from camera_top
+// converts the cloud message to a pcl XYZRGB pointcloud 
+void Cloud::cloud_top_callback(const sensor_msgs::PointCloud2 msg) 
 {
-    this->master_cloud = this->cloud_front;
-    this->master_cloud+= this->cloud_back;
-    this->master_cloud+= this->cloud_left;
-    this->master_cloud+= this->cloud_right;
+    fromROSMsg(msg, this->cloud_top);
+ 
+    ros::Time stamp;
+    pcl_conversions::toPCL(stamp, this->cloud_top.header.stamp);
+    this->tf_listener.waitForTransform("/world", this->cloud_top.header.frame_id, stamp, ros::Duration(10.0));
+    pcl_ros::transformPointCloud("/world", this->cloud_top, this->cloud_top, this->tf_listener);
+
+    this->top_initialized = true;
 }
 
-// TRIANGULATE CLOUD FUNCTION
-// creates a mesh from all the clouds
-void Cloud::triangulate_clouds() 
+// VOXEL FILTER FUNCTION
+// downsamples point cloud to make the resulting model cleaner
+PointCloud<PointXYZ> Cloud::voxel_filter(PointCloud<PointXYZ>::Ptr cloud)
 {
-    // put the master cloud in a pointer
-    PointCloud<PointXYZ>::Ptr cloud(new PointCloud<PointXYZ>);
-    *cloud = this->master_cloud;
-    
-    // normal estimation
-    NormalEstimation<PointXYZ, Normal> n;                                       // create a normal estimator utility
-    PointCloud<Normal>::Ptr normals(new PointCloud<Normal>);                    // create a recepticle for the normals
-    search::KdTree<PointXYZ>::Ptr normal_tree(new search::KdTree<PointXYZ>);    // create a receptical for the search tree
-    normal_tree->setInputCloud(cloud);                                          // initialize the tree's cloud
-    n.setInputCloud(cloud);                                                     // initialize the normal calculator's cloud
-    n.setSearchMethod (normal_tree);                                            // initialize the normal caclulator's tree
-    n.setKSearch (20);                                                          // TODO: find out what this parameter does
-    n.compute (*normals);                                                       // compute the normals of the cloud with the calculator
+    PointCloud<PointXYZ>::Ptr filtered_cloud(new PointCloud<PointXYZ>);
 
-    // concatenate the XYZ and normal fields
-    PointCloud<PointNormal>::Ptr normal_cloud(new PointCloud<PointNormal>);     // create a recepticle for the comnbined xyz and normal information
-    concatenateFields(this->master_cloud, *normals, *normal_cloud);             // combine the normal and xyz information
+    VoxelGrid<PointXYZ> sor;
+    sor.setInputCloud(cloud);
+    sor.setLeafSize(0.0075, 0.0075, 0.0075); 
+    sor.filter(*filtered_cloud);
 
-    // create search tree
-    search::KdTree<PointNormal>::Ptr mesh_tree(new search::KdTree<PointNormal>);   
-    mesh_tree->setInputCloud(normal_cloud);                                  
-
-    // set typical values for triangulation parameters
-    GreedyProjectionTriangulation<pcl::PointNormal> gp3;        // make a greedy projection triangulation object
-    gp3.setSearchRadius (0.025);                                // set the maximum edge length between connected points (mm?)
-    gp3.setMu (2.5);                                            // maximum distance for a point to be considered relative to the distance to the nearest point
-    gp3.setMaximumNearestNeighbors (100);                       // defines how many neighbors are searched for
-    gp3.setMinimumAngle(M_PI/18);                               //  10 degrees : minimum angle in each triangle
-    gp3.setMaximumAngle(2*M_PI/3);                              // 120 degrees : maximim angle in each triangle
-    gp3.setMaximumSurfaceAngle(M_PI/4);                         //  45 degrees : helps keep jarring transitions smooth 
-    gp3.setNormalConsistency(false);                            // also helps keep jarring transitions smooth
-
-    // produce mesh
-    gp3.setInputCloud(normal_cloud);    // initialize the input cloud of the gp3
-    gp3.setSearchMethod(mesh_tree);     // initialize the input tree of the gp3
-    gp3.reconstruct(this->master_mesh); // triangulize that shit
+    return *filtered_cloud;
 }
 
+// MOVE LEAST SQUARES FUNCTION
+// aligns the surface normals to eliminate noise
+PointCloud<PointNormal> Cloud::move_least_squares(PointCloud<PointXYZ>::Ptr cloud)
+{
+    search::KdTree<PointXYZ>::Ptr tree(new search::KdTree<PointXYZ>);
+    PointCloud<PointNormal> mls_points;
+    MovingLeastSquares<PointXYZ, PointNormal> mls;
+ 
+    mls.setComputeNormals(true);
+    mls.setInputCloud(cloud);
+    mls.setPolynomialOrder(4);
+    mls.setSearchMethod(tree);
+    mls.setSearchRadius(0.05);
+    mls.process(mls_points);
+
+    return mls_points;
+}
 
 // GET TIMESTAMP FUNCTION
 // This function gets the current date & time and returns it as a string  

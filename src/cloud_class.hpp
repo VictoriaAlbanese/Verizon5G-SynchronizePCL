@@ -15,11 +15,13 @@
 #include <cstring>
 #include <ctime> 
 #include <pcl/features/normal_3d.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl/io/obj_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/surface/gp3.h>
+#include <pcl/surface/mls.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
 #include <ros/package.h>
@@ -37,20 +39,23 @@ class Cloud
 
         // members
         PolygonMesh master_mesh;
-	PointCloud<PointXYZ> master_cloud;
+	PointCloud<PointNormal> master_cloud;
 	PointCloud<PointXYZ> cloud_front;
 	PointCloud<PointXYZ> cloud_back;
 	PointCloud<PointXYZ> cloud_left;
 	PointCloud<PointXYZ> cloud_right;
+	PointCloud<PointXYZ> cloud_top;
         bool front_initialized;
         bool back_initialized;
         bool left_initialized;
         bool right_initialized;
+        bool top_initialized;
         ros::Publisher  cloud_pub;
         ros::Subscriber cloud_front_sub;
         ros::Subscriber cloud_back_sub;
         ros::Subscriber cloud_left_sub;
         ros::Subscriber cloud_right_sub;
+        ros::Subscriber cloud_top_sub;
         TransformListener tf_listener;
         int counter;
         string timestamp; 
@@ -60,9 +65,10 @@ class Cloud
         void cloud_back_callback(const sensor_msgs::PointCloud2 msg);
         void cloud_left_callback(const sensor_msgs::PointCloud2 msg);
         void cloud_right_callback(const sensor_msgs::PointCloud2 msg);
-	void concatenate_clouds();
-        void triangulate_clouds();
-	bool initialized() { return front_initialized && back_initialized && left_initialized && right_initialized; }
+        void cloud_top_callback(const sensor_msgs::PointCloud2 msg);
+        PointCloud<PointXYZ> voxel_filter(PointCloud<PointXYZ>::Ptr cloud);
+        PointCloud<PointNormal> move_least_squares(PointCloud<PointXYZ>::Ptr cloud);
+	bool initialized();
         string get_timestamp();
 
     public:
@@ -70,6 +76,8 @@ class Cloud
         // functions
         Cloud();
         Cloud(ros::NodeHandle handle);
+	void concatenate_clouds();
+        void triangulate_clouds();
 	void publish_master_cloud();	
         void output_file(string model_name = "model");
 };

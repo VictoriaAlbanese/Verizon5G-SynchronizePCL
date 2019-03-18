@@ -19,6 +19,7 @@ so that the pointclouds they generate can be visualized
     <include file="$(find synchronize_pointclouds)/launch/camera_back.launch"  />
     <include file="$(find synchronize_pointclouds)/launch/camera_left.launch"  />
     <include file="$(find synchronize_pointclouds)/launch/camera_right.launch" />
+    <include file="$(find synchronize_pointclouds)/launch/camera_top.launch" />
 
   
     <!-- This launches RViz all setup to visualize them -->
