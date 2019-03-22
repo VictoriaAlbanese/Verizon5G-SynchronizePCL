@@ -66,6 +66,7 @@ void Cloud::publish_master_cloud()
 void Cloud::concatenate_clouds() 
 {
     PointCloud<PointXYZ>::Ptr temp_cloud(new PointCloud<PointXYZ>);
+    PointCloud<PointNormal>::Ptr norm_cloud(new PointCloud<PointNormal>);
     
     *temp_cloud = this->cloud_front;
     *temp_cloud+= this->cloud_back;
@@ -73,8 +74,10 @@ void Cloud::concatenate_clouds()
     *temp_cloud+= this->cloud_right;
     *temp_cloud+= this->cloud_top;
 
-    *temp_cloud = this->voxel_filter(temp_cloud);
-    this->master_cloud = this->move_least_squares(temp_cloud); 
+    //this->master_cloud = this->move_least_squares(temp_cloud); 
+    *norm_cloud = this->move_least_squares(temp_cloud); 
+    this->master_cloud = this->voxel_filter(norm_cloud);
+
 }
 
 // TRIANGULATE CLOUD FUNCTION
@@ -91,12 +94,12 @@ void Cloud::triangulate_clouds()
 
     // set typical values for triangulation parameters
     GreedyProjectionTriangulation<pcl::PointNormal> gp3;        // make a greedy projection triangulation object
-    gp3.setSearchRadius(0.025);                                 // set the maximum edge length between connected points (mm?)
+    gp3.setSearchRadius(0.05);                                  // set the maximum edge length between connected points (m)
     gp3.setMu(2.5);                                             // maximum distance for a point to be considered relative to the distance to the nearest point
-    gp3.setMaximumNearestNeighbors(200);                        // defines how many neighbors are searched for
+    gp3.setMaximumNearestNeighbors(500);                        // defines how many neighbors are searched for
     gp3.setMinimumAngle(M_PI/18);                               //  10 degrees : minimum angle in each triangle
     gp3.setMaximumAngle(5*M_PI/6);                              // 150 degrees : maximim angle in each triangle
-    gp3.setMaximumSurfaceAngle(M_PI/4);                         //  45 degrees : helps keep jarring transitions smooth 
+    gp3.setMaximumSurfaceAngle(M_PI/2);                         //  90 degrees : helps keep jarring transitions smooth 
     gp3.setNormalConsistency(true);                             // also helps keep jarring transitions smooth
 
     // produce mesh
@@ -212,13 +215,13 @@ void Cloud::cloud_top_callback(const sensor_msgs::PointCloud2 msg)
 
 // VOXEL FILTER FUNCTION
 // downsamples point cloud to make the resulting model cleaner
-PointCloud<PointXYZ> Cloud::voxel_filter(PointCloud<PointXYZ>::Ptr cloud)
+PointCloud<PointNormal> Cloud::voxel_filter(PointCloud<PointNormal>::Ptr cloud)
 {
-    PointCloud<PointXYZ>::Ptr filtered_cloud(new PointCloud<PointXYZ>);
+    PointCloud<PointNormal>::Ptr filtered_cloud(new PointCloud<PointNormal>);
 
-    VoxelGrid<PointXYZ> sor;
+    VoxelGrid<PointNormal> sor;
     sor.setInputCloud(cloud);
-    sor.setLeafSize(0.0075, 0.0075, 0.0075); 
+    sor.setLeafSize(0.005, 0.005, 0.005); 
     sor.filter(*filtered_cloud);
 
     return *filtered_cloud;
@@ -229,17 +232,26 @@ PointCloud<PointXYZ> Cloud::voxel_filter(PointCloud<PointXYZ>::Ptr cloud)
 PointCloud<PointNormal> Cloud::move_least_squares(PointCloud<PointXYZ>::Ptr cloud)
 {
     search::KdTree<PointXYZ>::Ptr tree(new search::KdTree<PointXYZ>);
-    PointCloud<PointNormal> mls_points;
+    PointCloud<PointNormal> mls_normals;
     MovingLeastSquares<PointXYZ, PointNormal> mls;
  
+    // mls smoothing
     mls.setComputeNormals(true);
     mls.setInputCloud(cloud);
-    mls.setPolynomialOrder(4);
+    mls.setPolynomialOrder(2);
     mls.setSearchMethod(tree);
-    mls.setSearchRadius(0.05);
-    mls.process(mls_points);
+    mls.setSearchRadius(0.015);
+    
+    // mls sample local plane upsampling
+    mls.setUpsamplingMethod (MovingLeastSquares<PointXYZ, PointNormal>::SAMPLE_LOCAL_PLANE);
+    mls.setUpsamplingRadius(0.01);
+    mls.setUpsamplingStepSize(0.003);
 
-    return mls_points;
+    // recaluclate the normals with upsampling
+    mls_normals.clear();
+    mls.process (mls_normals);
+
+    return mls_normals;
 }
 
 // GET TIMESTAMP FUNCTION

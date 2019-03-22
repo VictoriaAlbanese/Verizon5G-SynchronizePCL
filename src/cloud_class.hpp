@@ -66,7 +66,7 @@ class Cloud
         void cloud_left_callback(const sensor_msgs::PointCloud2 msg);
         void cloud_right_callback(const sensor_msgs::PointCloud2 msg);
         void cloud_top_callback(const sensor_msgs::PointCloud2 msg);
-        PointCloud<PointXYZ> voxel_filter(PointCloud<PointXYZ>::Ptr cloud);
+        PointCloud<PointNormal> voxel_filter(PointCloud<PointNormal>::Ptr cloud);
         PointCloud<PointNormal> move_least_squares(PointCloud<PointXYZ>::Ptr cloud);
 	bool initialized();
         string get_timestamp();
