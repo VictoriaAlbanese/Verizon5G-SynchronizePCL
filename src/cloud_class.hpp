@@ -74,6 +74,7 @@ class Cloud
         void output_file(string model_name);
 	bool initialized();
         string get_timestamp();
+        double durationMS(clock_t start, clock_t end);
 
     public:
 

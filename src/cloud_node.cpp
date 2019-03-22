@@ -29,7 +29,6 @@ int main(int argc, char * argv[])
         else cloud.produce_model();
     
         ros::spinOnce();    
-        ROS_INFO(".");
     }
 
     return 0;

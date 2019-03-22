@@ -55,12 +55,40 @@ Cloud::Cloud(ros::NodeHandle handle)
 // mesh from the resulting cloud, and saves the output to an obj file
 void Cloud::produce_model(string model_name) 
 {
-    this->concatenate_clouds();
-    this->move_least_squares();
-    this->voxel_filter();
-    this->triangulate_clouds();
+    clock_t start = clock();
+    clock_t before;
+    clock_t after;
 
+    before = clock();
+    cout << endl << endl;
+    cout << "[" << durationMS(start, before) << "] Concatenate function started..." << endl; 
+    this->concatenate_clouds();
+    after = clock();
+    cout << "[" << durationMS(start, after) << "] Concatenate function finished in " << durationMS(before, after) << " seconds..." << endl;
+ 
+    before = clock();
+    cout << "[" << setw(2) << durationMS(start, before) << "] MLS function started..." << endl; 
+    this->move_least_squares();
+    after = clock();
+    cout << "[" << setw(2) << durationMS(start, after) << "] MLS function finished in " << durationMS(before, after) << " seconds..." << endl;
+
+    before = clock();
+    cout << "[" << durationMS(start, before) << "] Voxel function started..." << endl; 
+    this->voxel_filter();
+    after = clock();
+    cout << "[" << durationMS(start, after) << "] Voxel function finished in " << durationMS(before, after) << " seconds..." << endl;
+
+    before = clock();
+    cout << "[" << durationMS(start, before) << "] Triangulate function started..." << endl; 
+    this->triangulate_clouds();
+    after = clock();
+    cout << "[" << durationMS(start, after) << "] Triangulate function finished in " << durationMS(before, after) << " seconds..." << endl;
+
+    before = clock();
+    cout << "[" << durationMS(start, before) << "] Output file being created..." << endl; 
     this->output_file(model_name); 
+    after = clock();
+    cout << "[" << durationMS(start, after) << "] Output file created in " << durationMS(before, after) << " seconds..." << endl;
 }
 
 
@@ -274,6 +302,19 @@ string Cloud::get_timestamp()
     string timestamp(buffer);
 
     return timestamp;
+}
+
+// DURATION MS FUNCTION
+// gets the duration of the passed clock times in milleseconds
+double Cloud::durationMS(clock_t start, clock_t end) 
+{
+    double duration;
+    
+    duration = (double)(end - start);
+    duration/= (double)CLOCKS_PER_SEC;
+    duration = round(duration * 1000.0) / 1000.0;
+
+    return duration;
 }
 
 ////////////////////////////////////////////////////////////////
