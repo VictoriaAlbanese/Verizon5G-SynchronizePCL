@@ -40,11 +40,12 @@ class Cloud
         // members
         PolygonMesh master_mesh;
 	PointCloud<PointNormal> master_cloud;
-	PointCloud<PointXYZ> cloud_front;
-	PointCloud<PointXYZ> cloud_back;
-	PointCloud<PointXYZ> cloud_left;
-	PointCloud<PointXYZ> cloud_right;
-	PointCloud<PointXYZ> cloud_top;
+	PointCloud<PointXYZRGB> cloud_front;
+	PointCloud<PointXYZRGB> cloud_back;
+	PointCloud<PointXYZRGB> cloud_left;
+	PointCloud<PointXYZRGB> cloud_right;
+	PointCloud<PointXYZRGB> cloud_top;
+	PointCloud<PointXYZRGB> colored_master_cloud;
         bool front_initialized;
         bool back_initialized;
         bool left_initialized;
@@ -66,8 +67,11 @@ class Cloud
         void cloud_left_callback(const sensor_msgs::PointCloud2 msg);
         void cloud_right_callback(const sensor_msgs::PointCloud2 msg);
         void cloud_top_callback(const sensor_msgs::PointCloud2 msg);
-        PointCloud<PointNormal> voxel_filter(PointCloud<PointNormal>::Ptr cloud);
-        PointCloud<PointNormal> move_least_squares(PointCloud<PointXYZ>::Ptr cloud);
+       	void concatenate_clouds();
+        void triangulate_clouds();
+        void move_least_squares();
+        void voxel_filter();
+        void output_file(string model_name);
 	bool initialized();
         string get_timestamp();
 
@@ -76,10 +80,8 @@ class Cloud
         // functions
         Cloud();
         Cloud(ros::NodeHandle handle);
-	void concatenate_clouds();
-        void triangulate_clouds();
+        void produce_model(string model_name = "model");
 	void publish_master_cloud();	
-        void output_file(string model_name = "model");
 };
 
 #endif // CLOUD_CLASS_HPP

@@ -49,6 +49,21 @@ Cloud::Cloud(ros::NodeHandle handle)
     while (!this->initialized()) ros::spinOnce();
 }
 
+// PRODUCE MODEL FUNCTION
+// this function concatenates the pointclouds, does preprocessing on 
+// the clouds (including smoothing, up/downsampling, etc), creates a polygon 
+// mesh from the resulting cloud, and saves the output to an obj file
+void Cloud::produce_model(string model_name) 
+{
+    this->concatenate_clouds();
+    this->move_least_squares();
+    this->voxel_filter();
+    this->triangulate_clouds();
+
+    this->output_file(model_name); 
+}
+
+
 // PUBLISH MASTER CLOUD FUNCTION
 // this function converts the pcl XYZRGB cloud to a 
 // sensor_msg PointCloud2 for easy publishing
@@ -58,70 +73,6 @@ void Cloud::publish_master_cloud()
     toROSMsg(this->master_cloud, cloud);
 
     this->cloud_pub.publish(cloud);
-}
-
-// CONCATENATE CLOUDS FUNCTION
-// concatenates the points of all the 
-// cloud members into the master pointcloud
-void Cloud::concatenate_clouds() 
-{
-    PointCloud<PointXYZ>::Ptr temp_cloud(new PointCloud<PointXYZ>);
-    PointCloud<PointNormal>::Ptr norm_cloud(new PointCloud<PointNormal>);
-    
-    *temp_cloud = this->cloud_front;
-    *temp_cloud+= this->cloud_back;
-    *temp_cloud+= this->cloud_left;
-    *temp_cloud+= this->cloud_right;
-    *temp_cloud+= this->cloud_top;
-
-    //this->master_cloud = this->move_least_squares(temp_cloud); 
-    *norm_cloud = this->move_least_squares(temp_cloud); 
-    this->master_cloud = this->voxel_filter(norm_cloud);
-
-}
-
-// TRIANGULATE CLOUD FUNCTION
-// creates a mesh from all the clouds
-void Cloud::triangulate_clouds() 
-{
-    // concatenate the XYZ and normal fields
-    PointCloud<PointNormal>::Ptr normal_cloud(new PointCloud<PointNormal>);
-    *normal_cloud = this->master_cloud;
-
-    // create search tree
-    search::KdTree<PointNormal>::Ptr mesh_tree(new search::KdTree<PointNormal>);   
-    mesh_tree->setInputCloud(normal_cloud);                                  
-
-    // set typical values for triangulation parameters
-    GreedyProjectionTriangulation<pcl::PointNormal> gp3;        // make a greedy projection triangulation object
-    gp3.setSearchRadius(0.05);                                  // set the maximum edge length between connected points (m)
-    gp3.setMu(2.5);                                             // maximum distance for a point to be considered relative to the distance to the nearest point
-    gp3.setMaximumNearestNeighbors(500);                        // defines how many neighbors are searched for
-    gp3.setMinimumAngle(M_PI/18);                               //  10 degrees : minimum angle in each triangle
-    gp3.setMaximumAngle(5*M_PI/6);                              // 150 degrees : maximim angle in each triangle
-    gp3.setMaximumSurfaceAngle(M_PI/2);                         //  90 degrees : helps keep jarring transitions smooth 
-    gp3.setNormalConsistency(true);                             // also helps keep jarring transitions smooth
-
-    // produce mesh
-    gp3.setInputCloud(normal_cloud);    // initialize the input cloud of the gp3
-    gp3.setSearchMethod(mesh_tree);     // initialize the input tree of the gp3
-    gp3.reconstruct(this->master_mesh); // triangulize that shit
-}
-
-// OUTPUT FILE FUNCTION
-// this function converts the polymesh to a parsable file format
-void Cloud::output_file(string model_name) 
-{
-    std::stringstream path;
-    path << ros::package::getPath("synchronize_pointclouds");
-    path << "/object_models/";
-    path << model_name << "_" << this->timestamp << ".obj";
-    
-    // make a directory for multiple model files
-    // boost::filesystem::create_directory(path.str() + "/model_" + this->timestamp);
-    // path << "/model_" << this->timestamp;
-   
-    io::saveOBJFile(path.str(), this->master_mesh); 
 }
 
 ////////////////////////////////////////////////////////////////
@@ -213,24 +164,26 @@ void Cloud::cloud_top_callback(const sensor_msgs::PointCloud2 msg)
     this->top_initialized = true;
 }
 
-// VOXEL FILTER FUNCTION
-// downsamples point cloud to make the resulting model cleaner
-PointCloud<PointNormal> Cloud::voxel_filter(PointCloud<PointNormal>::Ptr cloud)
+// CONCATENATE CLOUDS FUNCTION
+// concatenates the points of all the 
+// cloud members into the master pointcloud
+void Cloud::concatenate_clouds() 
 {
-    PointCloud<PointNormal>::Ptr filtered_cloud(new PointCloud<PointNormal>);
-
-    VoxelGrid<PointNormal> sor;
-    sor.setInputCloud(cloud);
-    sor.setLeafSize(0.005, 0.005, 0.005); 
-    sor.filter(*filtered_cloud);
-
-    return *filtered_cloud;
+    this->colored_master_cloud = this->cloud_front;
+    this->colored_master_cloud+= this->cloud_back;
+    this->colored_master_cloud+= this->cloud_left;
+    this->colored_master_cloud+= this->cloud_right;
+    this->colored_master_cloud+= this->cloud_top;
 }
 
 // MOVE LEAST SQUARES FUNCTION
 // aligns the surface normals to eliminate noise
-PointCloud<PointNormal> Cloud::move_least_squares(PointCloud<PointXYZ>::Ptr cloud)
+// also does upsampling ro reduce noise & fill holes
+void Cloud::move_least_squares()
 {
+    PointCloud<PointXYZ>::Ptr cloud(new PointCloud<PointXYZ>);
+    copyPointCloud(this->colored_master_cloud, *cloud);
+
     search::KdTree<PointXYZ>::Ptr tree(new search::KdTree<PointXYZ>);
     PointCloud<PointNormal> mls_normals;
     MovingLeastSquares<PointXYZ, PointNormal> mls;
@@ -251,7 +204,60 @@ PointCloud<PointNormal> Cloud::move_least_squares(PointCloud<PointXYZ>::Ptr clou
     mls_normals.clear();
     mls.process (mls_normals);
 
-    return mls_normals;
+    this->master_cloud = mls_normals;
+}
+
+// VOXEL FILTER FUNCTION
+// downsamples point cloud to make the resulting model cleaner
+void Cloud::voxel_filter()
+{
+    PointCloud<PointNormal>::Ptr filtered_cloud(new PointCloud<PointNormal>);
+    PointCloud<PointNormal>::Ptr cloud(new PointCloud<PointNormal>);
+    *cloud = this->master_cloud;
+
+    VoxelGrid<PointNormal> sor;
+    sor.setInputCloud(cloud);
+    sor.setLeafSize(0.005, 0.005, 0.005); 
+    sor.filter(this->master_cloud);
+}
+
+// TRIANGULATE CLOUD FUNCTION
+// creates a mesh from all the clouds
+void Cloud::triangulate_clouds() 
+{
+    PointCloud<PointNormal>::Ptr normal_cloud(new PointCloud<PointNormal>);
+    *normal_cloud = this->master_cloud;
+    search::KdTree<PointNormal>::Ptr mesh_tree(new search::KdTree<PointNormal>);   
+    mesh_tree->setInputCloud(normal_cloud);                                  
+
+    GreedyProjectionTriangulation<pcl::PointNormal> gp3;        // make a greedy projection triangulation object
+    gp3.setSearchRadius(0.05);                                  // set the maximum edge length between connected points (m)
+    gp3.setMu(2.5);                                             // maximum distance for a point to be considered relative to the distance to the nearest point
+    gp3.setMaximumNearestNeighbors(500);                        // defines how many neighbors are searched for
+    gp3.setMinimumAngle(M_PI/18);                               //  10 degrees : minimum angle in each triangle
+    gp3.setMaximumAngle(5*M_PI/6);                              // 150 degrees : maximim angle in each triangle
+    gp3.setMaximumSurfaceAngle(M_PI/2);                         //  90 degrees : helps keep jarring transitions smooth 
+    gp3.setNormalConsistency(true);                             // also helps keep jarring transitions smooth
+
+    gp3.setInputCloud(normal_cloud);    // initialize the input cloud of the gp3
+    gp3.setSearchMethod(mesh_tree);     // initialize the input tree of the gp3
+    gp3.reconstruct(this->master_mesh); // triangulize that shit
+}
+
+// OUTPUT FILE FUNCTION
+// this function converts the polymesh to a parsable file format
+void Cloud::output_file(string model_name) 
+{
+    std::stringstream path;
+    path << ros::package::getPath("synchronize_pointclouds");
+    path << "/object_models/";
+    path << model_name << "_" << this->timestamp << ".obj";
+    
+    // make a directory for multiple model files
+    // boost::filesystem::create_directory(path.str() + "/model_" + this->timestamp);
+    // path << "/model_" << this->timestamp;
+   
+    io::saveOBJFile(path.str(), this->master_mesh); 
 }
 
 // GET TIMESTAMP FUNCTION

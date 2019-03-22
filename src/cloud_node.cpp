@@ -23,12 +23,10 @@ int main(int argc, char * argv[])
 
     while (ros::ok())
     {
-        cloud.concatenate_clouds();
-        cloud.triangulate_clouds();
         cloud.publish_master_cloud();
 
-        if (argc == 2) cloud.output_file(argv[1]);
-        else cloud.output_file();
+        if (argc == 2) cloud.produce_model(argv[1]);
+        else cloud.produce_model();
     
         ros::spinOnce();    
         ROS_INFO(".");
