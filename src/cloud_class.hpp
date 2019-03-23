@@ -14,6 +14,7 @@
 #include <boost/filesystem.hpp>
 #include <cstring>
 #include <ctime> 
+#include <fstream>
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/obj_io.h>
@@ -27,6 +28,7 @@
 #include <ros/package.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/String.h>
 #include <tf/transform_listener.h>
 
 using namespace pcl;
@@ -52,6 +54,8 @@ class Cloud
         bool right_initialized;
         bool top_initialized;
         ros::Publisher  cloud_pub;
+        ros::Publisher  colored_cloud_pub;
+        ros::Publisher  obj_file_pub;
         ros::Subscriber cloud_front_sub;
         ros::Subscriber cloud_back_sub;
         ros::Subscriber cloud_left_sub;

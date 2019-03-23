@@ -39,7 +39,9 @@ Cloud::Cloud(ros::NodeHandle handle)
     this->counter = 1;
     this->timestamp = get_timestamp();
 
+    this->obj_file_pub = handle.advertise<std_msgs::String>("object_model", 1);
     this->cloud_pub = handle.advertise<sensor_msgs::PointCloud2>("combined_cloud", 1);
+    this->colored_cloud_pub = handle.advertise<sensor_msgs::PointCloud2>("colored_combined_cloud", 1);
     this->cloud_front_sub = handle.subscribe("camera_front/depth_registered/points_filtered", 1, &Cloud::cloud_front_callback, this);
     this->cloud_back_sub = handle.subscribe("camera_back/depth_registered/points_filtered", 1, &Cloud::cloud_back_callback, this);
     this->cloud_left_sub = handle.subscribe("camera_left/depth_registered/points_filtered", 1, &Cloud::cloud_left_callback, this);
@@ -97,10 +99,15 @@ void Cloud::produce_model(string model_name)
 // sensor_msg PointCloud2 for easy publishing
 void Cloud::publish_master_cloud() 
 {
-    sensor_msgs::PointCloud2 cloud;
-    toROSMsg(this->master_cloud, cloud);
-
-    this->cloud_pub.publish(cloud);
+    // publish the raw colored cloud 
+    sensor_msgs::PointCloud2 raw_cloud;
+    toROSMsg(this->colored_master_cloud, raw_cloud);
+    this->cloud_pub.publish(raw_cloud);
+   
+    // publish the processed cloud
+    sensor_msgs::PointCloud2 proc_cloud;
+    toROSMsg(this->master_cloud, proc_cloud);
+    this->cloud_pub.publish(proc_cloud);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -276,7 +283,7 @@ void Cloud::triangulate_clouds()
 // this function converts the polymesh to a parsable file format
 void Cloud::output_file(string model_name) 
 {
-    std::stringstream path;
+    stringstream path;
     path << ros::package::getPath("synchronize_pointclouds");
     path << "/object_models/";
     path << model_name << "_" << this->timestamp << ".obj";
@@ -285,7 +292,15 @@ void Cloud::output_file(string model_name)
     // boost::filesystem::create_directory(path.str() + "/model_" + this->timestamp);
     // path << "/model_" << this->timestamp;
    
-    io::saveOBJFile(path.str(), this->master_mesh); 
+    io::saveOBJFile(path.str(), this->master_mesh);
+ 
+    ifstream t(path.str().c_str());             
+    stringstream file_contents;         
+    file_contents << t.rdbuf();         
+
+    std_msgs::String msg;               
+    msg.data = file_contents.str();
+    obj_file_pub.publish(msg);
 }
 
 // GET TIMESTAMP FUNCTION
