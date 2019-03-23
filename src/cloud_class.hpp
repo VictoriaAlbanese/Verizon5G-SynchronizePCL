@@ -31,6 +31,9 @@
 #include <std_msgs/String.h>
 #include <tf/transform_listener.h>
 
+#define BEFORE 0
+#define AFTER 1
+
 using namespace pcl;
 using namespace std;
 using namespace tf;
@@ -79,6 +82,7 @@ class Cloud
 	bool initialized();
         string get_timestamp();
         double durationMS(clock_t start, clock_t end);
+        void log_event(clock_t start, clock_t before, clock_t after, string description, bool when); 
 
     public:
 
