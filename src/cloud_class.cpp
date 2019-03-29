@@ -66,34 +66,34 @@ void Cloud::produce_model(string model_name)
     cout << endl << endl;
 
     before = clock();
-    cout << "[" << durationMS(start, before) << "] Concatenate function started..." << endl; 
+    this->log_event(start, before, after, "Concatenate function", BEFORE); 
     this->concatenate_clouds();
     after = clock();
-    cout << "[" << durationMS(start, after) << "] Concatenate function finished in " << durationMS(before, after) << " seconds..." << endl;
+    this->log_event(start, before, after, "Concatenate function", AFTER); 
  
     before = clock();
-    cout << "[" << setw(2) << durationMS(start, before) << "] MLS function started..." << endl; 
+    this->log_event(start, before, after, "Move least squares function", BEFORE); 
     this->move_least_squares();
     after = clock();
-    cout << "[" << setw(2) << durationMS(start, after) << "] MLS function finished in " << durationMS(before, after) << " seconds..." << endl;
+    this->log_event(start, before, after, "Move least squares function", AFTER); 
 
     before = clock();
-    cout << "[" << durationMS(start, before) << "] Voxel function started..." << endl; 
+    this->log_event(start, before, after, "Voxel function", BEFORE); 
     this->voxel_filter();
     after = clock();
-    cout << "[" << durationMS(start, after) << "] Voxel function finished in " << durationMS(before, after) << " seconds..." << endl;
+    this->log_event(start, before, after, "Voxel function", AFTER); 
 
     before = clock();
-    cout << "[" << durationMS(start, before) << "] Triangulate function started..." << endl; 
+    this->log_event(start, before, after, "Triangulate function", BEFORE); 
     this->triangulate_clouds();
     after = clock();
-    cout << "[" << durationMS(start, after) << "] Triangulate function finished in " << durationMS(before, after) << " seconds..." << endl;
+    this->log_event(start, before, after, "Triangulate function", AFTER); 
 
     before = clock();
-    cout << "[" << durationMS(start, before) << "] Output file being created..." << endl; 
+    this->log_event(start, before, after, "Creation of output file", BEFORE); 
     this->output_file(model_name); 
+    this->log_event(start, before, after, "Creation of output file", AFTER); 
     after = clock();
-    cout << "[" << durationMS(start, after) << "] Output file created in " << durationMS(before, after) << " seconds..." << endl;
 }
 
 
@@ -299,6 +299,25 @@ double Cloud::durationMS(clock_t start, clock_t end)
     duration = round(duration * 1000.0) / 1000.0;
 
     return duration;
+}
+
+// LOG EVENT FUNCTION
+// log an event & some time information
+void Cloud::log_event(clock_t start, clock_t before, clock_t after, string description, bool when) 
+{
+    if (when == BEFORE) 
+    {
+        cout << "[" << durationMS(start, before) << "] ";
+        cout << description << " started..." << endl; 
+    }
+
+    if (when == AFTER) 
+    {
+        cout << "[" << durationMS(start, after) << "] ";
+        cout << description << " completed in ";
+        cout << "[" << durationMS(before, after) << "] ";
+        cout << "seconds..." << endl;
+    }
 }
 
 ////////////////////////////////////////////////////////////////
