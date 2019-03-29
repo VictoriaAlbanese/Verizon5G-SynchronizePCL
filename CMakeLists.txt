@@ -19,6 +19,8 @@ find_package(catkin REQUIRED COMPONENTS
     image_transport
 )
 
+find_package(OpenCV 3.3.1 EXACT REQUIRED)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -124,6 +126,7 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIR}
 )
 
 ## Declare a C++ library
@@ -162,7 +165,7 @@ add_executable(calibration_node src/calibration_node.cpp)
 target_link_libraries(cloud_node ${catkin_LIBRARIES})
 target_link_libraries(transformer_node ${catkin_LIBRARIES})
 target_link_libraries(receiver_node ${catkin_LIBRARIES})
-target_link_libraries(calibration_node ${catkin_LIBRARIES})
+target_link_libraries(calibration_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 #target_link_libraries(concatenate_node ${catkin_LIBRARIES})
 #target_link_libraries(triangulate_node ${catkin_LIBRARIES})
 #target_link_libraries(resample_node ${catkin_LIBRARIES})
