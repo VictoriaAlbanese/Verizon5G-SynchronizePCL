@@ -138,6 +138,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(cloud_node src/cloud_node.cpp src/cloud_class.cpp src/cloud_class.hpp)
+add_executable(transformer_node src/transformer_node.cpp)
 add_executable(receiver_node src/receiver_node.cpp)
 #add_executable(concatenate_node src/concatenate.cpp)
 #add_executable(triangulate_node src/triangulate.cpp)
@@ -156,6 +157,7 @@ add_executable(receiver_node src/receiver_node.cpp)
 ## Specify libraries to link a library or executable target against
 #target_link_libraries(cloud_node ${catkin_LIBRARIES})
 target_link_libraries(cloud_node ${catkin_LIBRARIES})
+target_link_libraries(transformer_node ${catkin_LIBRARIES})
 target_link_libraries(receiver_node ${catkin_LIBRARIES})
 #target_link_libraries(concatenate_node ${catkin_LIBRARIES})
 #target_link_libraries(triangulate_node ${catkin_LIBRARIES})

@@ -22,6 +22,7 @@ Cloud::Cloud()
     this->back_initialized = false;
     this->left_initialized = false;
     this->right_initialized = false;
+    this->top_initialized = false;
 
     this->counter = 1;
     this->timestamp = get_timestamp();
@@ -35,6 +36,7 @@ Cloud::Cloud(ros::NodeHandle handle)
     this->back_initialized = false;
     this->left_initialized = false;
     this->right_initialized = false;
+    this->top_initialized = false;
 
     this->counter = 1;
     this->timestamp = get_timestamp();
@@ -42,11 +44,12 @@ Cloud::Cloud(ros::NodeHandle handle)
     this->obj_file_pub = handle.advertise<std_msgs::String>("object_model", 1);
     this->cloud_pub = handle.advertise<sensor_msgs::PointCloud2>("combined_cloud", 1);
     this->colored_cloud_pub = handle.advertise<sensor_msgs::PointCloud2>("colored_combined_cloud", 1);
-    this->cloud_front_sub = handle.subscribe("camera_front/depth_registered/points_filtered", 1, &Cloud::cloud_front_callback, this);
-    this->cloud_back_sub = handle.subscribe("camera_back/depth_registered/points_filtered", 1, &Cloud::cloud_back_callback, this);
-    this->cloud_left_sub = handle.subscribe("camera_left/depth_registered/points_filtered", 1, &Cloud::cloud_left_callback, this);
-    this->cloud_right_sub = handle.subscribe("camera_right/depth_registered/points_filtered", 1, &Cloud::cloud_right_callback, this);
-    this->cloud_top_sub = handle.subscribe("camera_top/depth_registered/points_filtered", 1, &Cloud::cloud_top_callback, this);
+
+    this->filtered_cloud_front_sub = handle.subscribe("camera_front/depth_registered/points_filtered", 1, &Cloud::filtered_cloud_front_callback, this);
+    this->filtered_cloud_back_sub = handle.subscribe("camera_back/depth_registered/points_filtered", 1, &Cloud::filtered_cloud_back_callback, this);
+    this->filtered_cloud_left_sub = handle.subscribe("camera_left/depth_registered/points_filtered", 1, &Cloud::filtered_cloud_left_callback, this);
+    this->filtered_cloud_right_sub = handle.subscribe("camera_right/depth_registered/points_filtered", 1, &Cloud::filtered_cloud_right_callback, this);
+    this->filtered_cloud_top_sub = handle.subscribe("camera_top/depth_registered/points_filtered", 1, &Cloud::filtered_cloud_top_callback, this);
 
     while (!this->initialized()) ros::spinOnce();
 }
@@ -60,9 +63,9 @@ void Cloud::produce_model(string model_name)
     clock_t start = clock();
     clock_t before;
     clock_t after;
+    cout << endl << endl;
 
     before = clock();
-    cout << endl << endl;
     cout << "[" << durationMS(start, before) << "] Concatenate function started..." << endl; 
     this->concatenate_clouds();
     after = clock();
@@ -121,81 +124,47 @@ bool Cloud::initialized()
     return (this->front_initialized 
             && this->back_initialized 
             && this->left_initialized 
-            && this->right_initialized); 
+            && this->right_initialized
+            && this->top_initialized); 
 }
 
-// CLOUD FRONT CALLBACK FUNCTION
-// initialize cloud front with the information from camera_front
-// converts the cloud message to a pcl XYZRGB pointcloud 
-void Cloud::cloud_front_callback(sensor_msgs::PointCloud2 msg) 
+// FILTERED CLOUD FRONT CALLBACK FUNCTION
+// initialize cloud front with the filtered pointcloud information
+void Cloud::filtered_cloud_front_callback(sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud_front);
-
-    ros::Time stamp;
-    pcl_conversions::toPCL(stamp, this->cloud_front.header.stamp);
-    this->tf_listener.waitForTransform("/world", this->cloud_front.header.frame_id, stamp, ros::Duration(10.0));
-    pcl_ros::transformPointCloud("/world", this->cloud_front, this->cloud_front, this->tf_listener);
-
     this->front_initialized = true;
 }
 
-// CLOUD BACK CALLBACK FUNCTION
+// FILTERED CLOUD BACK CALLBACK FUNCTION
 // initialize cloud back with the information from camera_back
-// converts the cloud message to a pcl XYZRGB pointcloud 
-void Cloud::cloud_back_callback(const sensor_msgs::PointCloud2 msg) 
+void Cloud::filtered_cloud_back_callback(const sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud_back);
- 
-    ros::Time stamp;
-    pcl_conversions::toPCL(stamp, this->cloud_back.header.stamp);
-    this->tf_listener.waitForTransform("/world", this->cloud_back.header.frame_id, stamp, ros::Duration(10.0));
-    pcl_ros::transformPointCloud("/world", this->cloud_back, this->cloud_back, this->tf_listener);
-    
     this->back_initialized = true;
 }
 
-// CLOUD LEFT CALLBACK FUNCTION
+// FILTERED CLOUD LEFT CALLBACK FUNCTION
 // initialize cloud left with the information from camera_left
-// converts the cloud message to a pcl XYZRGB pointcloud 
-void Cloud::cloud_left_callback(const sensor_msgs::PointCloud2 msg) 
+void Cloud::filtered_cloud_left_callback(const sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud_left);
- 
-    ros::Time stamp;
-    pcl_conversions::toPCL(stamp, this->cloud_left.header.stamp);
-    this->tf_listener.waitForTransform("/world", this->cloud_left.header.frame_id, stamp, ros::Duration(10.0));
-    pcl_ros::transformPointCloud("/world", this->cloud_left, this->cloud_left, this->tf_listener);
-
     this->left_initialized = true;
 }
 
-// CLOUD RIGHT CALLBACK FUNCTION
+// FILTERED CLOUD RIGHT CALLBACK FUNCTION
 // initialize cloud right with the information from camera_right
-// converts the cloud message to a pcl XYZRGB pointcloud 
-void Cloud::cloud_right_callback(const sensor_msgs::PointCloud2 msg) 
+void Cloud::filtered_cloud_right_callback(const sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud_right);
- 
-    ros::Time stamp;
-    pcl_conversions::toPCL(stamp, this->cloud_right.header.stamp);
-    this->tf_listener.waitForTransform("/world", this->cloud_right.header.frame_id, stamp, ros::Duration(10.0));
-    pcl_ros::transformPointCloud("/world", this->cloud_right, this->cloud_right, this->tf_listener);
-
     this->right_initialized = true;
 }
 
-// CLOUD TOP CALLBACK FUNCTION
+// FILTERED CLOUD TOP CALLBACK FUNCTION
 // initialize cloud top with the information from camera_top
-// converts the cloud message to a pcl XYZRGB pointcloud 
-void Cloud::cloud_top_callback(const sensor_msgs::PointCloud2 msg) 
+void Cloud::filtered_cloud_top_callback(const sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud_top);
- 
-    ros::Time stamp;
-    pcl_conversions::toPCL(stamp, this->cloud_top.header.stamp);
-    this->tf_listener.waitForTransform("/world", this->cloud_top.header.frame_id, stamp, ros::Duration(10.0));
-    pcl_ros::transformPointCloud("/world", this->cloud_top, this->cloud_top, this->tf_listener);
-
     this->top_initialized = true;
 }
 

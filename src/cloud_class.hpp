@@ -29,7 +29,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/String.h>
-#include <tf/transform_listener.h>
 
 using namespace pcl;
 using namespace std;
@@ -39,7 +38,8 @@ class Cloud
 {
     private: 
 
-        // members
+        // members-------------------------------------------
+
         PolygonMesh master_mesh;
 	PointCloud<PointNormal> master_cloud;
 	PointCloud<PointXYZRGB> cloud_front;
@@ -53,36 +53,42 @@ class Cloud
         bool left_initialized;
         bool right_initialized;
         bool top_initialized;
+        
         ros::Publisher  cloud_pub;
         ros::Publisher  colored_cloud_pub;
         ros::Publisher  obj_file_pub;
-        ros::Subscriber cloud_front_sub;
-        ros::Subscriber cloud_back_sub;
-        ros::Subscriber cloud_left_sub;
-        ros::Subscriber cloud_right_sub;
-        ros::Subscriber cloud_top_sub;
-        TransformListener tf_listener;
+       
+        ros::Subscriber filtered_cloud_front_sub;
+        ros::Subscriber filtered_cloud_back_sub;
+        ros::Subscriber filtered_cloud_left_sub;
+        ros::Subscriber filtered_cloud_right_sub;
+        ros::Subscriber filtered_cloud_top_sub;
+        
         int counter;
         string timestamp; 
 
-        // functions
-    	void cloud_front_callback(sensor_msgs::PointCloud2 msg);
-        void cloud_back_callback(const sensor_msgs::PointCloud2 msg);
-        void cloud_left_callback(const sensor_msgs::PointCloud2 msg);
-        void cloud_right_callback(const sensor_msgs::PointCloud2 msg);
-        void cloud_top_callback(const sensor_msgs::PointCloud2 msg);
-       	void concatenate_clouds();
+        // functions-----------------------------------------
+       	
+        void concatenate_clouds();
         void triangulate_clouds();
         void move_least_squares();
         void voxel_filter();
         void output_file(string model_name);
+
+    	void filtered_cloud_front_callback(sensor_msgs::PointCloud2 msg);
+        void filtered_cloud_back_callback(const sensor_msgs::PointCloud2 msg);
+        void filtered_cloud_left_callback(const sensor_msgs::PointCloud2 msg);
+        void filtered_cloud_right_callback(const sensor_msgs::PointCloud2 msg);
+        void filtered_cloud_top_callback(const sensor_msgs::PointCloud2 msg);
+
 	bool initialized();
         string get_timestamp();
         double durationMS(clock_t start, clock_t end);
 
     public:
 
-        // functions
+        // functions-----------------------------------------
+        
         Cloud();
         Cloud(ros::NodeHandle handle);
         void produce_model(string model_name = "model");
