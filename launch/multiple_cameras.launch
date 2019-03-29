@@ -14,6 +14,10 @@ so that the pointclouds they generate can be visualized
     <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" />
 
 
+    <!-- This node rotates all the cameras into a global frame -->    
+    <node pkg="synchronize_pointclouds" type="transformer_node" name="transformer_node" />
+
+
     <!-- This launches each of the cameras with parameters given in separate launchfiles -->
     <include file="$(find synchronize_pointclouds)/launch/camera_front.launch" />
     <include file="$(find synchronize_pointclouds)/launch/camera_back.launch"  />
@@ -23,7 +27,9 @@ so that the pointclouds they generate can be visualized
 
   
     <!-- This launches RViz all setup to visualize them -->
+    <!--
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find synchronize_pointclouds)/rviz/pointclouds.rviz" required="true" />
+    -->
 
 </launch>
 

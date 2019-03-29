@@ -17,16 +17,19 @@ on the rigging so that its pointcloud can be visualized
     </include>
 
 
-    <!-- These nodelets limit the FOV of the camera to 0.635 meters in depth -->
-    <!-- These nodelets limit the FOV of the camera to (+/-)0.3175 meters to the sides  -->
-    <!-- These nodelets filter out the ground plane which is approx. 0.085 meters below the camera-->
+    <!-- This transforms each resulting pointcloud into a global reference frame -->
+    <node name="camera_front_tf" pkg="tf" type="static_transform_publisher"
+        args="0.027 -0.388 0.40 0.01 -0.015 -2.0944 /world /camera_front_color_optical_frame 100"/>
+
+
+    <!-- These nodelets limit the FOV of the camera (including filtering out the ground plane) -->
     <node pkg="nodelet" type="nodelet" name="cloud_front_filter_fov_depth" args="load pcl/PassThrough pcl_manager" output="screen">
-        <remap from="~input"  to="/camera_front/depth_registered/points"/>
+        <remap from="~input"  to="/camera_front/depth_registered/points_rotated"/>
         <remap from="~output" to="/camera_front/depth_registered/points_filtered_depth"/>
         <rosparam>
-            filter_field_name: z
-            filter_limit_min: 0.0
-            filter_limit_max: 0.60
+            filter_field_name: y
+            filter_limit_min: -0.3
+            filter_limit_max: 0.3
             filter_limit_negative: False
         </rosparam>
     </node>	
@@ -35,48 +38,33 @@ on the rigging so that its pointcloud can be visualized
         <remap from="~output" to="/camera_front/depth_registered/points_filtered_sides"/>
         <rosparam>
             filter_field_name: x
-            filter_limit_min: -0.28
-            filter_limit_max:  0.28
+            filter_limit_min: -0.3
+            filter_limit_max:  0.3
             filter_limit_negative: False
         </rosparam>
     </node>	
-   
- 
     <node pkg="nodelet" type="nodelet" name="cloud_front_ground_filter" args="load pcl/PassThrough pcl_manager" output="screen">
         <remap from="~input"  to="/camera_front/depth_registered/points_filtered_sides"/>
         <remap from="~output" to="/camera_front/depth_registered/points_filtered_ground_plane"/>
         <rosparam>
-            filter_field_name: y
-            filter_limit_min: -1.0
-            filter_limit_max: 0.082
+            filter_field_name: z
+            filter_limit_min: 0.0075
+            filter_limit_max: 0.3
             filter_limit_negative: False
         </rosparam>
     </node>	
 
+
+    <!-- Statistical outlier removal for good measure -->
     <node pkg="nodelet" type="nodelet" name="cloud_front_outlier_removal_pass1" args="load pcl/StatisticalOutlierRemoval pcl_manager" output="screen"> 
         <remap from="~input"  to="/camera_front/depth_registered/points_filtered_ground_plane" /> 
-        <remap from="~output" to="/camera_front/depth_registered/points_filtered_pass1" /> 
-        <rosparam> 
-               mean_k: 100 
-               stddev: 0.01 
-               negative: False 
-        </rosparam> 
-    </node> 
-
-    <node pkg="nodelet" type="nodelet" name="cloud_front_outlier_removal" args="load pcl/StatisticalOutlierRemoval pcl_manager" output="screen"> 
-        <remap from="~input"  to="/camera_front/depth_registered/points_filtered_pass1" /> 
         <remap from="~output" to="/camera_front/depth_registered/points_filtered" /> 
         <rosparam> 
                mean_k: 100 
-               stddev: 0.01 
+               stddev: 0.9 
                negative: False 
         </rosparam> 
     </node> 
-
-
-    <!-- This transforms each resulting pointcloud into a global reference frame -->
-    <node name="camera_front_tf" pkg="tf" type="static_transform_publisher"
-        args="-0.040 -0.291 0.098 0 0 -1.60 /world /camera_front_color_optical_frame 100"/>
 
 </launch>
 
