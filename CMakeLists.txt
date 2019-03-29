@@ -8,13 +8,15 @@ project(synchronize_pointclouds)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
-  pcl_conversions
-  pcl_ros
-  roscpp
-  sensor_msgs
-  std_msgs
-  tf
+    geometry_msgs
+    pcl_conversions
+    pcl_ros
+    roscpp
+    sensor_msgs
+    std_msgs
+    tf
+    cv_bridge
+    image_transport
 )
 
 ## System dependencies are found with CMake's conventions
@@ -140,6 +142,7 @@ include_directories(
 add_executable(cloud_node src/cloud_node.cpp src/cloud_class.cpp src/cloud_class.hpp)
 add_executable(transformer_node src/transformer_node.cpp)
 add_executable(receiver_node src/receiver_node.cpp)
+add_executable(calibration_node src/calibration_node.cpp)
 #add_executable(concatenate_node src/concatenate.cpp)
 #add_executable(triangulate_node src/triangulate.cpp)
 #add_executable(resample_node src/resampling.cpp)
@@ -159,6 +162,7 @@ add_executable(receiver_node src/receiver_node.cpp)
 target_link_libraries(cloud_node ${catkin_LIBRARIES})
 target_link_libraries(transformer_node ${catkin_LIBRARIES})
 target_link_libraries(receiver_node ${catkin_LIBRARIES})
+target_link_libraries(calibration_node ${catkin_LIBRARIES})
 #target_link_libraries(concatenate_node ${catkin_LIBRARIES})
 #target_link_libraries(triangulate_node ${catkin_LIBRARIES})
 #target_link_libraries(resample_node ${catkin_LIBRARIES})
