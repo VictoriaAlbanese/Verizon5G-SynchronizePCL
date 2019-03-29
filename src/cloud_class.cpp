@@ -92,8 +92,8 @@ void Cloud::produce_model(string model_name)
     before = clock();
     this->log_event(start, before, after, "Creation of output file", BEFORE); 
     this->output_file(model_name); 
-    this->log_event(start, before, after, "Creation of output file", AFTER); 
     after = clock();
+    this->log_event(start, before, after, "Creation of output file", AFTER); 
 }
 
 
@@ -305,18 +305,20 @@ double Cloud::durationMS(clock_t start, clock_t end)
 // log an event & some time information
 void Cloud::log_event(clock_t start, clock_t before, clock_t after, string description, bool when) 
 {
+    cout.setf(ios::fixed, ios::floatfield);
+    cout.precision(3); 
+
     if (when == BEFORE) 
     {
-        cout << "[" << durationMS(start, before) << "] ";
+        cout << "[" << setw(6) << durationMS(start, before) << "] ";
         cout << description << " started..." << endl; 
     }
 
     if (when == AFTER) 
     {
-        cout << "[" << durationMS(start, after) << "] ";
+        cout << "[" << setw(6) << durationMS(start, after) << "] ";
         cout << description << " completed in ";
-        cout << "[" << durationMS(before, after) << "] ";
-        cout << "seconds..." << endl;
+        cout << durationMS(before, after) << " seconds..." << endl;
     }
 }
 
