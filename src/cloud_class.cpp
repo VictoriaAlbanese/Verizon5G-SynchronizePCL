@@ -9,6 +9,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "cloud_class.hpp"
+#include "MLS.h"
 
 ////////////////////////////////////////////////////////////////
 
@@ -73,7 +74,7 @@ void Cloud::produce_model(string model_name)
  
     before = clock();
     this->log_event(start, before, after, "Move least squares function", BEFORE); 
-    this->move_least_squares();
+    this->move_least_squares<Device>();
     after = clock();
     this->log_event(start, before, after, "Move least squares function", AFTER); 
 
@@ -134,6 +135,7 @@ void Cloud::filtered_cloud_front_callback(sensor_msgs::PointCloud2 msg)
 {
     fromROSMsg(msg, this->cloud_front);
     this->front_initialized = true;
+    ROS_INFO("FRONT INITIALIZED");
 }
 
 // FILTERED CLOUD BACK CALLBACK FUNCTION
@@ -142,6 +144,7 @@ void Cloud::filtered_cloud_back_callback(const sensor_msgs::PointCloud2 msg)
 {
     fromROSMsg(msg, this->cloud_back);
     this->back_initialized = true;
+    ROS_INFO("BACK INITIALIZED");
 }
 
 // FILTERED CLOUD LEFT CALLBACK FUNCTION
@@ -150,6 +153,7 @@ void Cloud::filtered_cloud_left_callback(const sensor_msgs::PointCloud2 msg)
 {
     fromROSMsg(msg, this->cloud_left);
     this->left_initialized = true;
+    ROS_INFO("LEFT INITIALIZED");
 }
 
 // FILTERED CLOUD RIGHT CALLBACK FUNCTION
@@ -158,6 +162,7 @@ void Cloud::filtered_cloud_right_callback(const sensor_msgs::PointCloud2 msg)
 {
     fromROSMsg(msg, this->cloud_right);
     this->right_initialized = true;
+    ROS_INFO("RIGHT INITIALIZED");
 }
 
 // FILTERED CLOUD TOP CALLBACK FUNCTION
@@ -166,6 +171,7 @@ void Cloud::filtered_cloud_top_callback(const sensor_msgs::PointCloud2 msg)
 {
     fromROSMsg(msg, this->cloud_top);
     this->top_initialized = true;
+    ROS_INFO("TOP INITIALIZED");
 }
 
 // CONCATENATE CLOUDS FUNCTION
@@ -173,53 +179,72 @@ void Cloud::filtered_cloud_top_callback(const sensor_msgs::PointCloud2 msg)
 // cloud members into the master pointcloud
 void Cloud::concatenate_clouds() 
 {
-    this->colored_master_cloud = this->cloud_front;
-    this->colored_master_cloud+= this->cloud_back;
-    this->colored_master_cloud+= this->cloud_left;
-    this->colored_master_cloud+= this->cloud_right;
-    this->colored_master_cloud+= this->cloud_top;
+    this->master_cloud = this->cloud_front;
+    this->master_cloud+= this->cloud_back;
+    this->master_cloud+= this->cloud_left;
+    this->master_cloud+= this->cloud_right;
+    this->master_cloud+= this->cloud_top;
 }
 
 // MOVE LEAST SQUARES FUNCTION
 // aligns the surface normals to eliminate noise
 // also does upsampling ro reduce noise & fill holes
+template <template <typename> class Storage>
 void Cloud::move_least_squares()
 {
-    PointCloud<PointXYZ>::Ptr cloud(new PointCloud<PointXYZ>);
-    copyPointCloud(this->colored_master_cloud, *cloud);
+    std_msgs::Header old_head;
+    pcl_conversions::fromPCL(this->master_cloud.header, old_head);
 
-    search::KdTree<PointXYZ>::Ptr tree(new search::KdTree<PointXYZ>);
-    PointCloud<PointNormal> mls_normals;
-    MovingLeastSquares<PointXYZ, PointNormal> mls;
- 
-    // mls smoothing
-    mls.setComputeNormals(true);
-    mls.setInputCloud(cloud);
-    mls.setPolynomialOrder(2);
-    mls.setSearchMethod(tree);
-    mls.setSearchRadius(0.015);
-    
-    // mls sample local plane upsampling
-    mls.setUpsamplingMethod (MovingLeastSquares<PointXYZ, PointNormal>::SAMPLE_LOCAL_PLANE);
-    mls.setUpsamplingRadius(0.01);
-    mls.setUpsamplingStepSize(0.003);
+    PointCloud<pcl::PointXYZRGB>::Ptr output (new PointCloud<pcl::PointXYZRGB>);
+    PointCloudAOS<Host> data_host;
+    PointCloudAOS<Device>::Ptr data;
+    PointCloudAOS<Device>::Ptr data_out;
+   
+    // convert pcl cloud to cuda cloud 
+    data_host.points.resize(this->master_cloud.points.size());
+    for (size_t i = 0; i < this->master_cloud.points.size (); ++i)
+    {
+        pcl::cuda::PointXYZRGB pt;
+        pt.x = this->master_cloud.points[i].x;
+        pt.y = this->master_cloud.points[i].y;
+        pt.z = this->master_cloud.points[i].z;
+        pt.rgb = *(float*)(&this->master_cloud.points[i].rgb); // Pack RGB into a float
+        data_host.points[i] = pt;
+    }
+    data_host.width = this->master_cloud.width;
+    data_host.height = this->master_cloud.height;
+    data_host.is_dense = this->master_cloud.is_dense;
 
-    // recaluclate the normals with upsampling
-    mls_normals.clear();
-    mls.process (mls_normals);
+    // make sure there is enough memory in the gpu for this 
+    size_t free, total;
+    cudaMemGetInfo(&free, &total);
+    if (free/MEGA < 15)
+    {
+    	cout << "Not enough memory!   ";
+    	cout << "Free: " << free/MEGA << " of " << total/MEGA << " mb" << endl;
+    	return;
+    }
 
-    this->master_cloud = mls_normals;
+    // thrust the cloud through the gpu mls stuff
+    data = toStorage<Host, Storage> (data_host); 
+    data_out = toStorage<Host, Storage> (data_host);
+    thrustPCL_AOS(data, data_out, NN_CONNECTIVITY, SMOOTHNESS);
+
+    // save the cloud to a pcl cloud 
+    pcl::cuda::toPCL(*data_out, *output);
+    this->master_cloud = *output;
+    pcl_conversions::toPCL(old_head, this->master_cloud.header);
 }
 
 // VOXEL FILTER FUNCTION
 // downsamples point cloud to make the resulting model cleaner
 void Cloud::voxel_filter()
 {
-    PointCloud<PointNormal>::Ptr filtered_cloud(new PointCloud<PointNormal>);
-    PointCloud<PointNormal>::Ptr cloud(new PointCloud<PointNormal>);
+    PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud(new PointCloud<pcl::PointXYZRGB>);
+    PointCloud<pcl::PointXYZRGB>::Ptr cloud(new PointCloud<pcl::PointXYZRGB>);
     *cloud = this->master_cloud;
 
-    VoxelGrid<PointNormal> sor;
+    VoxelGrid<pcl::PointXYZRGB> sor;
     sor.setInputCloud(cloud);
     sor.setLeafSize(0.005, 0.005, 0.005); 
     sor.filter(this->master_cloud);
@@ -229,9 +254,22 @@ void Cloud::voxel_filter()
 // creates a mesh from all the clouds
 void Cloud::triangulate_clouds() 
 {
-    PointCloud<PointNormal>::Ptr normal_cloud(new PointCloud<PointNormal>);
-    *normal_cloud = this->master_cloud;
-    search::KdTree<PointNormal>::Ptr mesh_tree(new search::KdTree<PointNormal>);   
+    PointCloud<pcl::PointXYZ>::Ptr cloud(new PointCloud<pcl::PointXYZ>);
+    copyPointCloud(this->master_cloud, *cloud);
+
+    NormalEstimation<pcl::PointXYZ, pcl::Normal> n;                                     // create a normal estimator utility
+    PointCloud<pcl::Normal>::Ptr normals(new PointCloud<pcl::Normal>);                  // create a recepticle for the normals
+    search::KdTree<pcl::PointXYZ>::Ptr normal_tree(new search::KdTree<pcl::PointXYZ>);  // create a receptical for the search tree
+    normal_tree->setInputCloud(cloud);                                                  // initialize the tree's cloud
+    n.setInputCloud(cloud);                                                             // initialize the normal calculator's cloud
+    n.setSearchMethod (normal_tree);                                                    // initialize the normal caclulator's tree
+    n.setKSearch (20);                                                                  // TODO: find out what this parameter does
+    n.compute (*normals);                                                               // compute the normals of the cloud with the calculator
+
+    PointCloud<pcl::PointNormal>::Ptr normal_cloud(new PointCloud<pcl::PointNormal>);   // create a recepticle for the comnbined xyz and normal information
+    concatenateFields(*cloud, *normals, *normal_cloud);                     // combine the normal and xyz information
+
+    search::KdTree<pcl::PointNormal>::Ptr mesh_tree(new search::KdTree<pcl::PointNormal>);   
     mesh_tree->setInputCloud(normal_cloud);                                  
 
     GreedyProjectionTriangulation<pcl::PointNormal> gp3;        // make a greedy projection triangulation object

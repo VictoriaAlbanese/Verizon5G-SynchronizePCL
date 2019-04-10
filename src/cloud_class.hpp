@@ -20,6 +20,7 @@
 #include <pcl/io/obj_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_cloud.h>
+#include <pcl/cuda/io/host_device.h>
 #include <pcl/point_types.h>
 #include <pcl/surface/gp3.h>
 #include <pcl/surface/mls.h>
@@ -29,6 +30,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/String.h>
+
 
 #define BEFORE 0
 #define AFTER 1
@@ -44,7 +46,7 @@ class Cloud
         // members-------------------------------------------
 
         PolygonMesh master_mesh;
-	PointCloud<PointNormal> master_cloud;
+	PointCloud<PointXYZRGB> master_cloud;
 	PointCloud<PointXYZRGB> cloud_front;
 	PointCloud<PointXYZRGB> cloud_back;
 	PointCloud<PointXYZRGB> cloud_left;
@@ -74,7 +76,10 @@ class Cloud
        	
         void concatenate_clouds();
         void triangulate_clouds();
+        
+        template <template <typename> class Storage>
         void move_least_squares();
+        
         void voxel_filter();
         void output_file(string model_name);
 
