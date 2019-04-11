@@ -81,6 +81,7 @@ class Cloud
         
         int counter;
         string timestamp; 
+        clock_t start_time;
 
         // functions-----------------------------------------
        	
@@ -105,8 +106,8 @@ class Cloud
 
 	bool initialized();
         string get_timestamp();
-        double durationMS(clock_t start, clock_t end);
-        void log_event(clock_t start, clock_t before, clock_t after, string description, bool when); 
+        double durationMS(clock_t before, clock_t after);
+        void log_event(clock_t before, clock_t after, string description, bool when); 
 
     public:
 

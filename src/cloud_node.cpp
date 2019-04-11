@@ -21,12 +21,15 @@ int main(int argc, char * argv[])
 
     Cloud cloud(nh);
 
-    while (ros::ok() && cloud.count() <= 10)
+    while (ros::ok())
     {
         cloud.publish_master_cloud();
 
-        if (argc == 2) cloud.produce_model(argv[1]);
-        else cloud.produce_model();
+        if (cloud.count() < 1)
+        {
+            if (argc == 2) cloud.produce_model(argv[1]);
+            else cloud.produce_model();
+        }
     
         ros::spinOnce();    
     }

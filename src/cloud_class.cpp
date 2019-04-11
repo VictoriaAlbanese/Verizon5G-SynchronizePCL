@@ -29,8 +29,9 @@ Cloud::Cloud()
     this->cloud8_initialized = false;
     this->cloud9_initialized = false;
 
-    this->counter = 1;
+    this->counter = 0;
     this->timestamp = get_timestamp();
+    this->start_time = clock();
 }
 
 // CONSTRUCTOR
@@ -47,9 +48,6 @@ Cloud::Cloud(ros::NodeHandle handle)
     this->cloud8_initialized = false;
     this->cloud9_initialized = false;
 
-    this->counter = 1;
-    this->timestamp = get_timestamp();
-
     this->obj_file_pub = handle.advertise<std_msgs::String>("object_model", 1);
     this->cloud_pub = handle.advertise<sensor_msgs::PointCloud2>("combined_cloud", 1);
 
@@ -63,7 +61,19 @@ Cloud::Cloud(ros::NodeHandle handle)
     this->filtered_cloud8_sub = handle.subscribe("camera_8/depth_registered/points_filtered", 1, &Cloud::filtered_cloud8_callback, this);
     this->filtered_cloud9_sub = handle.subscribe("camera_9/depth_registered/points_filtered", 1, &Cloud::filtered_cloud9_callback, this);
 
+    this->counter = 0;
+    this->timestamp = get_timestamp();
+    this->start_time = clock();
+
+    clock_t before;
+    clock_t after;
+
+    cout << endl << endl;
+    before = clock();
+    this->log_event(before, after, "Initializing cameras", BEFORE); 
     while (!this->initialized()) ros::spinOnce();
+    after = clock();
+    this->log_event(before, after, "Initializing cameras", AFTER); 
 }
 
 // PRODUCE MODEL FUNCTION
@@ -72,40 +82,42 @@ Cloud::Cloud(ros::NodeHandle handle)
 // mesh from the resulting cloud, and saves the output to an obj file
 void Cloud::produce_model(string model_name) 
 {
-    clock_t start = clock();
     clock_t before;
     clock_t after;
-    cout << endl << endl;
 
     before = clock();
-    this->log_event(start, before, after, "Concatenate function", BEFORE); 
+    //this->log_event(before, after, "Concatenate function", BEFORE); 
     this->concatenate_clouds();
     after = clock();
-    this->log_event(start, before, after, "Concatenate function", AFTER); 
+    this->log_event(before, after, "Concatenate function", AFTER); 
  
     before = clock();
-    this->log_event(start, before, after, "Move least squares function", BEFORE); 
+    //this->log_event(before, after, "Move least squares function", BEFORE); 
     this->move_least_squares<Device>();
     after = clock();
-    this->log_event(start, before, after, "Move least squares function", AFTER); 
+    this->log_event(before, after, "Move least squares function", AFTER); 
 
     before = clock();
-    this->log_event(start, before, after, "Voxel function", BEFORE); 
+    //this->log_event(before, after, "Voxel function", BEFORE); 
     this->voxel_filter();
     after = clock();
-    this->log_event(start, before, after, "Voxel function", AFTER); 
+    this->log_event(before, after, "Voxel function", AFTER); 
 
     before = clock();
-    this->log_event(start, before, after, "Triangulate function", BEFORE); 
+    //this->log_event(before, after, "Triangulate function", BEFORE); 
     this->triangulate_clouds();
     after = clock();
-    this->log_event(start, before, after, "Triangulate function", AFTER); 
+    this->log_event(before, after, "Triangulate function", AFTER); 
 
     before = clock();
-    this->log_event(start, before, after, "Creation of output file", BEFORE); 
+    //this->log_event(before, after, "Creation of output file", BEFORE); 
     this->output_file(model_name); 
     after = clock();
-    this->log_event(start, before, after, "Creation of output file", AFTER); 
+    this->log_event(before, after, "Creation of output file", AFTER); 
+
+    this->log_event(this->start_time, after, "Full process", AFTER); 
+    cout << endl << "Publishing cloud forever..." << endl;
+    cout << "Press Ctrl+C to quit" << endl << endl;
 
     this->counter++;
 }
@@ -145,7 +157,8 @@ bool Cloud::initialized()
 void Cloud::filtered_cloud1_callback(sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud1);
-    if (this->cloud1_initialized == false) ROS_INFO("CLOUD 1 INITIALIZED");
+    if (this->cloud1_initialized == false)
+        this->log_event(clock(), clock(), "Cloud 1", BEFORE); 
     this->cloud1_initialized = true;
 }
 
@@ -154,7 +167,8 @@ void Cloud::filtered_cloud1_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::filtered_cloud2_callback(sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud2);
-    if (this->cloud2_initialized == false) ROS_INFO("CLOUD 2 INITIALIZED");
+    if (this->cloud2_initialized == false)
+        this->log_event(clock(), clock(), "Cloud 2", BEFORE); 
     this->cloud2_initialized = true;
 }
 
@@ -163,7 +177,8 @@ void Cloud::filtered_cloud2_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::filtered_cloud3_callback(sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud3);
-    if (this->cloud3_initialized == false) ROS_INFO("CLOUD 3 INITIALIZED");
+    if (this->cloud3_initialized == false)
+        this->log_event(clock(), clock(), "Cloud 3", BEFORE); 
     this->cloud3_initialized = true;
 }
 
@@ -172,7 +187,8 @@ void Cloud::filtered_cloud3_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::filtered_cloud4_callback(sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud4);
-    if (this->cloud4_initialized == false) ROS_INFO("CLOUD 4 INITIALIZED");
+    if (this->cloud4_initialized == false)
+        this->log_event(clock(), clock(), "Cloud 4", BEFORE); 
     this->cloud4_initialized = true;
 }
 
@@ -181,7 +197,8 @@ void Cloud::filtered_cloud4_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::filtered_cloud5_callback(sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud5);
-    if (this->cloud5_initialized == false) ROS_INFO("CLOUD 5 INITIALIZED");
+    if (this->cloud5_initialized == false)
+        this->log_event(clock(), clock(), "Cloud 5", BEFORE); 
     this->cloud5_initialized = true;
 }
 
@@ -190,7 +207,8 @@ void Cloud::filtered_cloud5_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::filtered_cloud6_callback(sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud6);
-    if (this->cloud6_initialized == false) ROS_INFO("CLOUD 6 INITIALIZED");
+    if (this->cloud6_initialized == false)
+        this->log_event(clock(), clock(), "Cloud 6", BEFORE); 
     this->cloud6_initialized = true;
 }
 
@@ -199,7 +217,8 @@ void Cloud::filtered_cloud6_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::filtered_cloud7_callback(sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud7);
-    if (this->cloud7_initialized == false) ROS_INFO("CLOUD 7 INITIALIZED");
+    if (this->cloud7_initialized == false)
+        this->log_event(clock(), clock(), "Cloud 7", BEFORE); 
     this->cloud7_initialized = true;
 }
 
@@ -208,7 +227,8 @@ void Cloud::filtered_cloud7_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::filtered_cloud8_callback(sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud8);
-    if (this->cloud8_initialized == false) ROS_INFO("CLOUD 8 INITIALIZED");
+    if (this->cloud8_initialized == false)
+        this->log_event(clock(), clock(), "Cloud 8", BEFORE); 
     this->cloud8_initialized = true;
 }
 
@@ -217,7 +237,8 @@ void Cloud::filtered_cloud8_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::filtered_cloud9_callback(sensor_msgs::PointCloud2 msg) 
 {
     fromROSMsg(msg, this->cloud9);
-    if (this->cloud9_initialized == false) ROS_INFO("CLOUD 9 INITIALIZED");
+    if (this->cloud9_initialized == false)
+        this->log_event(clock(), clock(), "Cloud 9", BEFORE); 
     this->cloud9_initialized = true;
 }
 
@@ -244,7 +265,7 @@ void Cloud::concatenate_clouds()
 template <template <typename> class Storage>
 void Cloud::move_least_squares()
 {
-    cout << "\t# Points in Cloud Before : " << this->master_cloud.points.size() << " --------------------------------" << endl;
+    //cout << "\t# Points in Cloud Before : " << this->master_cloud.points.size() << " --------------------------------" << endl;
     std_msgs::Header old_head;
     pcl_conversions::fromPCL(this->master_cloud.header, old_head);
 
@@ -287,7 +308,7 @@ void Cloud::move_least_squares()
     pcl::cuda::toPCL(*data_out, *output);
     this->master_cloud = *output;
     pcl_conversions::toPCL(old_head, this->master_cloud.header);
-    cout << "\t# Points in Cloud After : " << this->master_cloud.points.size() << " --------------------------------" << endl;
+    //cout << "\t# Points in Cloud After : " << this->master_cloud.points.size() << " --------------------------------" << endl;
 }
 
 // VOXEL FILTER FUNCTION
@@ -382,11 +403,11 @@ string Cloud::get_timestamp()
 
 // DURATION MS FUNCTION
 // gets the duration of the passed clock times in milleseconds
-double Cloud::durationMS(clock_t start, clock_t end) 
+double Cloud::durationMS(clock_t before, clock_t after) 
 {
     double duration;
     
-    duration = (double)(end - start);
+    duration = (double)(after - before);
     duration/= (double)CLOCKS_PER_SEC;
     duration = round(duration * 1000.0) / 1000.0;
 
@@ -395,20 +416,20 @@ double Cloud::durationMS(clock_t start, clock_t end)
 
 // LOG EVENT FUNCTION
 // log an event & some time information
-void Cloud::log_event(clock_t start, clock_t before, clock_t after, string description, bool when) 
+void Cloud::log_event(clock_t before, clock_t after, string description, bool when) 
 {
     cout.setf(ios::fixed, ios::floatfield);
     cout.precision(3); 
 
     if (when == BEFORE) 
     {
-        cout << "[" << setw(6) << durationMS(start, before) << "] ";
+        cout << "[" << setw(6) << durationMS(this->start_time, before) << "] ";
         cout << description << " started..." << endl; 
     }
 
     if (when == AFTER) 
     {
-        cout << "[" << setw(6) << durationMS(start, after) << "] ";
+        cout << "[" << setw(6) << durationMS(this->start_time, after) << "] ";
         cout << description << " completed in ";
         cout << durationMS(before, after) << " seconds..." << endl;
     }
