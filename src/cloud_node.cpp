@@ -21,7 +21,7 @@ int main(int argc, char * argv[])
 
     Cloud cloud(nh);
 
-    while (ros::ok())
+    while (ros::ok() && cloud.count() <= 10)
     {
         cloud.publish_master_cloud();
 
