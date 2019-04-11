@@ -1,0 +1,70 @@
+<!--
+
+Programmer: Victoria Albanese
+Filename: camera_6.launch
+
+Purpose: Launch the Intel RealSense 435i camera
+so that its pointcloud can be visualized
+
+-->
+
+<launch>
+
+    <!-- This launches the camera with the correct parameters -->
+    <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+	<arg name="camera" value="camera_6" />
+	<arg name="serial_no" value="843112074121" />
+    </include>
+
+
+    <!-- This transforms each resulting pointcloud into a global reference frame -->
+    <node name="camera_6_tf" pkg="tf" type="static_transform_publisher"
+        args="-0.032 -0.254 0.01 6.281 0 -1.60 /world /camera_6_color_optical_frame 100"/>
+
+
+    <!-- These nodelets limit the FOV of the camera (including filtering out the ground plane) -->
+    <node pkg="nodelet" type="nodelet" name="cloud_6_filter_fov_depth" args="load pcl/PassThrough pcl_manager" output="screen">
+        <remap from="~input"  to="/camera_6/depth_registered/points_rotated"/>
+        <remap from="~output" to="/camera_6/depth_registered/points_filtered_depth"/>
+        <rosparam>
+            filter_field_name: y
+            filter_limit_min: -0.15
+            filter_limit_max:  0.15
+            filter_limit_negative: False
+        </rosparam>
+    </node>	
+    <node pkg="nodelet" type="nodelet" name="cloud_6_filter_fov_sides" args="load pcl/PassThrough pcl_manager" output="screen">
+        <remap from="~input"  to="/camera_6/depth_registered/points_filtered_depth"/>
+        <remap from="~output" to="/camera_6/depth_registered/points_filtered_sides"/>
+        <rosparam>
+            filter_field_name: x
+            filter_limit_min: -0.15
+            filter_limit_max:  0.15
+            filter_limit_negative: False
+        </rosparam>
+    </node>	
+    <node pkg="nodelet" type="nodelet" name="cloud_6_ground_filter" args="load pcl/PassThrough pcl_manager" output="screen">
+        <remap from="~input"  to="/camera_6/depth_registered/points_filtered_sides"/>
+        <remap from="~output" to="/camera_6/depth_registered/points_filtered_ground_plane"/>
+        <rosparam>
+            filter_field_name: z
+            filter_limit_min: 0.01
+            filter_limit_max: 0.5
+            filter_limit_negative: False
+        </rosparam>
+    </node>	
+
+
+    <!-- Statistical outlier removal for good measure -->
+    <node pkg="nodelet" type="nodelet" name="cloud_6_outlier_removal_pass1" args="load pcl/StatisticalOutlierRemoval pcl_manager" output="screen"> 
+        <remap from="~input"  to="/camera_6/depth_registered/points_filtered_ground_plane" /> 
+        <remap from="~output" to="/camera_6/depth_registered/points_filtered" /> 
+        <rosparam> 
+               mean_k: 100 
+               stddev: 0.9 
+               negative: False 
+        </rosparam> 
+    </node> 
+
+</launch>
+

@@ -27,9 +27,7 @@ so that the pointclouds they generate can be visualized
 
   
     <!-- This launches RViz all setup to visualize them -->
-    <!--
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find synchronize_pointclouds)/rviz/pointclouds.rviz" required="true" />
-    -->
 
 </launch>
 
