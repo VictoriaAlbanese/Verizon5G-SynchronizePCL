@@ -47,27 +47,37 @@ class Cloud
 
         PolygonMesh master_mesh;
 	PointCloud<PointXYZRGB> master_cloud;
-	PointCloud<PointXYZRGB> cloud_front;
-	PointCloud<PointXYZRGB> cloud_back;
-	PointCloud<PointXYZRGB> cloud_left;
-	PointCloud<PointXYZRGB> cloud_right;
-	PointCloud<PointXYZRGB> cloud_top;
-	PointCloud<PointXYZRGB> colored_master_cloud;
-        bool front_initialized;
-        bool back_initialized;
-        bool left_initialized;
-        bool right_initialized;
-        bool top_initialized;
+	PointCloud<PointXYZRGB> cloud1;
+	PointCloud<PointXYZRGB> cloud2;
+	PointCloud<PointXYZRGB> cloud3;
+	PointCloud<PointXYZRGB> cloud4;
+	PointCloud<PointXYZRGB> cloud5;
+	PointCloud<PointXYZRGB> cloud6;
+	PointCloud<PointXYZRGB> cloud7;
+	PointCloud<PointXYZRGB> cloud8;
+	PointCloud<PointXYZRGB> cloud9;
+        bool cloud1_initialized;
+        bool cloud2_initialized;
+        bool cloud3_initialized;
+        bool cloud4_initialized;
+        bool cloud5_initialized;
+        bool cloud6_initialized;
+        bool cloud7_initialized;
+        bool cloud8_initialized;
+        bool cloud9_initialized;
         
         ros::Publisher  cloud_pub;
-        ros::Publisher  colored_cloud_pub;
         ros::Publisher  obj_file_pub;
        
-        ros::Subscriber filtered_cloud_front_sub;
-        ros::Subscriber filtered_cloud_back_sub;
-        ros::Subscriber filtered_cloud_left_sub;
-        ros::Subscriber filtered_cloud_right_sub;
-        ros::Subscriber filtered_cloud_top_sub;
+        ros::Subscriber filtered_cloud1_sub;
+        ros::Subscriber filtered_cloud2_sub;
+        ros::Subscriber filtered_cloud3_sub;
+        ros::Subscriber filtered_cloud4_sub;
+        ros::Subscriber filtered_cloud5_sub;
+        ros::Subscriber filtered_cloud6_sub;
+        ros::Subscriber filtered_cloud7_sub;
+        ros::Subscriber filtered_cloud8_sub;
+        ros::Subscriber filtered_cloud9_sub;
         
         int counter;
         string timestamp; 
@@ -83,11 +93,15 @@ class Cloud
         void voxel_filter();
         void output_file(string model_name);
 
-    	void filtered_cloud_front_callback(sensor_msgs::PointCloud2 msg);
-        void filtered_cloud_back_callback(const sensor_msgs::PointCloud2 msg);
-        void filtered_cloud_left_callback(const sensor_msgs::PointCloud2 msg);
-        void filtered_cloud_right_callback(const sensor_msgs::PointCloud2 msg);
-        void filtered_cloud_top_callback(const sensor_msgs::PointCloud2 msg);
+    	void filtered_cloud1_callback(sensor_msgs::PointCloud2 msg);
+    	void filtered_cloud2_callback(sensor_msgs::PointCloud2 msg);
+    	void filtered_cloud3_callback(sensor_msgs::PointCloud2 msg);
+    	void filtered_cloud4_callback(sensor_msgs::PointCloud2 msg);
+    	void filtered_cloud5_callback(sensor_msgs::PointCloud2 msg);
+    	void filtered_cloud6_callback(sensor_msgs::PointCloud2 msg);
+    	void filtered_cloud7_callback(sensor_msgs::PointCloud2 msg);
+    	void filtered_cloud8_callback(sensor_msgs::PointCloud2 msg);
+    	void filtered_cloud9_callback(sensor_msgs::PointCloud2 msg);
 
 	bool initialized();
         string get_timestamp();
@@ -102,6 +116,7 @@ class Cloud
         Cloud(ros::NodeHandle handle);
         void produce_model(string model_name = "model");
 	void publish_master_cloud();	
+        int count() { return counter; }
 };
 
 #endif // CLOUD_CLASS_HPP

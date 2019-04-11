@@ -52,7 +52,6 @@ cuda_add_executable(cloud_node  src/MLS.h
                                 src/cloud_class.hpp 
                                 src/MLS.cu)
 add_executable(transformer_node src/transformer_node.cpp)
-add_executable(ufo_transformer_node src/ufo_transformer_node.cpp)
 add_executable(receiver_node src/receiver_node.cpp)
 #add_executable(calibration_node src/calibration_node.cpp)
 
@@ -63,7 +62,6 @@ target_link_libraries(cloud_node    ${catkin_LIBRARIES}
                                     ${PCL_LIBRARIES} 
                                     ${PCL_CUDA_COMMON_LIBRARIES})
 target_link_libraries(transformer_node ${catkin_LIBRARIES})
-target_link_libraries(ufo_transformer_node ${catkin_LIBRARIES})
 target_link_libraries(receiver_node ${catkin_LIBRARIES})
 #target_link_libraries(calibration_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 

@@ -19,11 +19,15 @@
 // does not do ros initialization
 Cloud::Cloud()
 {
-    this->front_initialized = false;
-    this->back_initialized = false;
-    this->left_initialized = false;
-    this->right_initialized = false;
-    this->top_initialized = false;
+    this->cloud1_initialized = false;
+    this->cloud2_initialized = false;
+    this->cloud3_initialized = false;
+    this->cloud4_initialized = false;
+    this->cloud5_initialized = false;
+    this->cloud6_initialized = false;
+    this->cloud7_initialized = false;
+    this->cloud8_initialized = false;
+    this->cloud9_initialized = false;
 
     this->counter = 1;
     this->timestamp = get_timestamp();
@@ -33,24 +37,31 @@ Cloud::Cloud()
 // does the ros initialization
 Cloud::Cloud(ros::NodeHandle handle)
 {
-    this->front_initialized = false;
-    this->back_initialized = false;
-    this->left_initialized = false;
-    this->right_initialized = false;
-    this->top_initialized = false;
+    this->cloud1_initialized = false;
+    this->cloud2_initialized = false;
+    this->cloud3_initialized = false;
+    this->cloud4_initialized = false;
+    this->cloud5_initialized = false;
+    this->cloud6_initialized = false;
+    this->cloud7_initialized = false;
+    this->cloud8_initialized = false;
+    this->cloud9_initialized = false;
 
     this->counter = 1;
     this->timestamp = get_timestamp();
 
     this->obj_file_pub = handle.advertise<std_msgs::String>("object_model", 1);
     this->cloud_pub = handle.advertise<sensor_msgs::PointCloud2>("combined_cloud", 1);
-    this->colored_cloud_pub = handle.advertise<sensor_msgs::PointCloud2>("colored_combined_cloud", 1);
 
-    this->filtered_cloud_front_sub = handle.subscribe("camera_front/depth_registered/points_filtered", 1, &Cloud::filtered_cloud_front_callback, this);
-    this->filtered_cloud_back_sub = handle.subscribe("camera_back/depth_registered/points_filtered", 1, &Cloud::filtered_cloud_back_callback, this);
-    this->filtered_cloud_left_sub = handle.subscribe("camera_left/depth_registered/points_filtered", 1, &Cloud::filtered_cloud_left_callback, this);
-    this->filtered_cloud_right_sub = handle.subscribe("camera_right/depth_registered/points_filtered", 1, &Cloud::filtered_cloud_right_callback, this);
-    this->filtered_cloud_top_sub = handle.subscribe("camera_top/depth_registered/points_filtered", 1, &Cloud::filtered_cloud_top_callback, this);
+    this->filtered_cloud1_sub = handle.subscribe("camera_1/depth_registered/points_filtered", 1, &Cloud::filtered_cloud1_callback, this);
+    this->filtered_cloud2_sub = handle.subscribe("camera_2/depth_registered/points_filtered", 1, &Cloud::filtered_cloud2_callback, this);
+    this->filtered_cloud3_sub = handle.subscribe("camera_3/depth_registered/points_filtered", 1, &Cloud::filtered_cloud3_callback, this);
+    this->filtered_cloud4_sub = handle.subscribe("camera_4/depth_registered/points_filtered", 1, &Cloud::filtered_cloud4_callback, this);
+    this->filtered_cloud5_sub = handle.subscribe("camera_5/depth_registered/points_filtered", 1, &Cloud::filtered_cloud5_callback, this);
+    this->filtered_cloud6_sub = handle.subscribe("camera_6/depth_registered/points_filtered", 1, &Cloud::filtered_cloud6_callback, this);
+    this->filtered_cloud7_sub = handle.subscribe("camera_7/depth_registered/points_filtered", 1, &Cloud::filtered_cloud7_callback, this);
+    this->filtered_cloud8_sub = handle.subscribe("camera_8/depth_registered/points_filtered", 1, &Cloud::filtered_cloud8_callback, this);
+    this->filtered_cloud9_sub = handle.subscribe("camera_9/depth_registered/points_filtered", 1, &Cloud::filtered_cloud9_callback, this);
 
     while (!this->initialized()) ros::spinOnce();
 }
@@ -95,6 +106,8 @@ void Cloud::produce_model(string model_name)
     this->output_file(model_name); 
     after = clock();
     this->log_event(start, before, after, "Creation of output file", AFTER); 
+
+    this->counter++;
 }
 
 
@@ -103,12 +116,6 @@ void Cloud::produce_model(string model_name)
 // sensor_msg PointCloud2 for easy publishing
 void Cloud::publish_master_cloud() 
 {
-    // publish the raw colored cloud 
-    sensor_msgs::PointCloud2 raw_cloud;
-    toROSMsg(this->colored_master_cloud, raw_cloud);
-    this->cloud_pub.publish(raw_cloud);
-   
-    // publish the processed cloud
     sensor_msgs::PointCloud2 proc_cloud;
     toROSMsg(this->master_cloud, proc_cloud);
     this->cloud_pub.publish(proc_cloud);
@@ -122,68 +129,113 @@ void Cloud::publish_master_cloud()
 // this function checks that all the pointclouds are initialized
 bool Cloud::initialized() 
 { 
-    return (this->front_initialized 
-            && this->back_initialized 
-            && this->left_initialized 
-            && this->right_initialized
-            && this->top_initialized); 
+    return (this->cloud1_initialized 
+            //&& this->cloud2_initialized 
+            && this->cloud3_initialized 
+            && this->cloud4_initialized 
+            && this->cloud5_initialized 
+            && this->cloud6_initialized 
+            && this->cloud7_initialized 
+            && this->cloud8_initialized 
+            && this->cloud9_initialized);
 }
 
-// FILTERED CLOUD FRONT CALLBACK FUNCTION
-// initialize cloud front with the filtered pointcloud information
-void Cloud::filtered_cloud_front_callback(sensor_msgs::PointCloud2 msg) 
+// FILTERED CLOUD1 CALLBACK FUNCTION
+// initialize cloud1 with the filtered pointcloud information
+void Cloud::filtered_cloud1_callback(sensor_msgs::PointCloud2 msg) 
 {
-    fromROSMsg(msg, this->cloud_front);
-    this->front_initialized = true;
-    ROS_INFO("FRONT INITIALIZED");
+    fromROSMsg(msg, this->cloud1);
+    if (this->cloud1_initialized == false) ROS_INFO("CLOUD 1 INITIALIZED");
+    this->cloud1_initialized = true;
 }
 
-// FILTERED CLOUD BACK CALLBACK FUNCTION
-// initialize cloud back with the information from camera_back
-void Cloud::filtered_cloud_back_callback(const sensor_msgs::PointCloud2 msg) 
+// FILTERED CLOUD2 CALLBACK FUNCTION
+// initialize cloud2 with the filtered pointcloud information
+void Cloud::filtered_cloud2_callback(sensor_msgs::PointCloud2 msg) 
 {
-    fromROSMsg(msg, this->cloud_back);
-    this->back_initialized = true;
-    ROS_INFO("BACK INITIALIZED");
+    fromROSMsg(msg, this->cloud2);
+    if (this->cloud2_initialized == false) ROS_INFO("CLOUD 2 INITIALIZED");
+    this->cloud2_initialized = true;
 }
 
-// FILTERED CLOUD LEFT CALLBACK FUNCTION
-// initialize cloud left with the information from camera_left
-void Cloud::filtered_cloud_left_callback(const sensor_msgs::PointCloud2 msg) 
+// FILTERED CLOUD3 CALLBACK FUNCTION
+// initialize cloud3 with the filtered pointcloud information
+void Cloud::filtered_cloud3_callback(sensor_msgs::PointCloud2 msg) 
 {
-    fromROSMsg(msg, this->cloud_left);
-    this->left_initialized = true;
-    ROS_INFO("LEFT INITIALIZED");
+    fromROSMsg(msg, this->cloud3);
+    if (this->cloud3_initialized == false) ROS_INFO("CLOUD 3 INITIALIZED");
+    this->cloud3_initialized = true;
 }
 
-// FILTERED CLOUD RIGHT CALLBACK FUNCTION
-// initialize cloud right with the information from camera_right
-void Cloud::filtered_cloud_right_callback(const sensor_msgs::PointCloud2 msg) 
+// FILTERED CLOUD4 CALLBACK FUNCTION
+// initialize cloud1 with the filtered pointcloud information
+void Cloud::filtered_cloud4_callback(sensor_msgs::PointCloud2 msg) 
 {
-    fromROSMsg(msg, this->cloud_right);
-    this->right_initialized = true;
-    ROS_INFO("RIGHT INITIALIZED");
+    fromROSMsg(msg, this->cloud4);
+    if (this->cloud4_initialized == false) ROS_INFO("CLOUD 4 INITIALIZED");
+    this->cloud4_initialized = true;
 }
 
-// FILTERED CLOUD TOP CALLBACK FUNCTION
-// initialize cloud top with the information from camera_top
-void Cloud::filtered_cloud_top_callback(const sensor_msgs::PointCloud2 msg) 
+// FILTERED CLOUD5 CALLBACK FUNCTION
+// initialize cloud5 with the filtered pointcloud information
+void Cloud::filtered_cloud5_callback(sensor_msgs::PointCloud2 msg) 
 {
-    fromROSMsg(msg, this->cloud_top);
-    this->top_initialized = true;
-    ROS_INFO("TOP INITIALIZED");
+    fromROSMsg(msg, this->cloud5);
+    if (this->cloud5_initialized == false) ROS_INFO("CLOUD 5 INITIALIZED");
+    this->cloud5_initialized = true;
 }
+
+// FILTERED CLOUD6 CALLBACK FUNCTION
+// initialize cloud6 with the filtered pointcloud information
+void Cloud::filtered_cloud6_callback(sensor_msgs::PointCloud2 msg) 
+{
+    fromROSMsg(msg, this->cloud6);
+    if (this->cloud6_initialized == false) ROS_INFO("CLOUD 6 INITIALIZED");
+    this->cloud6_initialized = true;
+}
+
+// FILTERED CLOUD7 CALLBACK FUNCTION
+// initialize cloud7 with the filtered pointcloud information
+void Cloud::filtered_cloud7_callback(sensor_msgs::PointCloud2 msg) 
+{
+    fromROSMsg(msg, this->cloud7);
+    if (this->cloud7_initialized == false) ROS_INFO("CLOUD 7 INITIALIZED");
+    this->cloud7_initialized = true;
+}
+
+// FILTERED CLOUD8 CALLBACK FUNCTION
+// initialize cloud8 with the filtered pointcloud information
+void Cloud::filtered_cloud8_callback(sensor_msgs::PointCloud2 msg) 
+{
+    fromROSMsg(msg, this->cloud8);
+    if (this->cloud8_initialized == false) ROS_INFO("CLOUD 8 INITIALIZED");
+    this->cloud8_initialized = true;
+}
+
+// FILTERED CLOUD9 CALLBACK FUNCTION
+// initialize cloud9 with the filtered pointcloud information
+void Cloud::filtered_cloud9_callback(sensor_msgs::PointCloud2 msg) 
+{
+    fromROSMsg(msg, this->cloud9);
+    if (this->cloud9_initialized == false) ROS_INFO("CLOUD 9 INITIALIZED");
+    this->cloud9_initialized = true;
+}
+
 
 // CONCATENATE CLOUDS FUNCTION
 // concatenates the points of all the 
 // cloud members into the master pointcloud
 void Cloud::concatenate_clouds() 
 {
-    this->master_cloud = this->cloud_front;
-    this->master_cloud+= this->cloud_back;
-    this->master_cloud+= this->cloud_left;
-    this->master_cloud+= this->cloud_right;
-    this->master_cloud+= this->cloud_top;
+    this->master_cloud = this->cloud1;
+    //this->master_cloud+= this->cloud2;
+    this->master_cloud+= this->cloud3;
+    this->master_cloud+= this->cloud4;
+    this->master_cloud+= this->cloud5;
+    this->master_cloud+= this->cloud6;
+    this->master_cloud+= this->cloud7;
+    this->master_cloud+= this->cloud8;
+    this->master_cloud+= this->cloud9;
 }
 
 // MOVE LEAST SQUARES FUNCTION
@@ -192,6 +244,7 @@ void Cloud::concatenate_clouds()
 template <template <typename> class Storage>
 void Cloud::move_least_squares()
 {
+    cout << "\t# Points in Cloud Before : " << this->master_cloud.points.size() << " --------------------------------" << endl;
     std_msgs::Header old_head;
     pcl_conversions::fromPCL(this->master_cloud.header, old_head);
 
@@ -234,6 +287,7 @@ void Cloud::move_least_squares()
     pcl::cuda::toPCL(*data_out, *output);
     this->master_cloud = *output;
     pcl_conversions::toPCL(old_head, this->master_cloud.header);
+    cout << "\t# Points in Cloud After : " << this->master_cloud.points.size() << " --------------------------------" << endl;
 }
 
 // VOXEL FILTER FUNCTION
@@ -246,7 +300,7 @@ void Cloud::voxel_filter()
 
     VoxelGrid<pcl::PointXYZRGB> sor;
     sor.setInputCloud(cloud);
-    sor.setLeafSize(0.005, 0.005, 0.005); 
+    sor.setLeafSize(0.0075, 0.0075, 0.0075); 
     sor.filter(this->master_cloud);
 }
 
