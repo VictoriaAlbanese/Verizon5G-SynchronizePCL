@@ -8,8 +8,8 @@
 //
 ////////////////////////////////////////////////////////////////
 
-#ifndef CLOUD_CLASS_HPP
-#define CLOUD_CLASS_HPP
+#ifndef CLOUD_CLASS_CPU_HPP
+#define CLOUD_CLASS_CPU_HPP
 
 #include <boost/filesystem.hpp>
 #include <cstring>
@@ -20,7 +20,6 @@
 #include <pcl/io/obj_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_cloud.h>
-#include <pcl/cuda/io/host_device.h>
 #include <pcl/point_types.h>
 #include <pcl/surface/gp3.h>
 #include <pcl/surface/mls.h>
@@ -87,10 +86,7 @@ class Cloud
        	
         void concatenate_clouds();
         void triangulate_clouds();
-        
-        template <template <typename> class Storage>
-        void move_least_squares();
- 
+        void move_least_squares();       
         void voxel_filter();
         void output_file(string model_name);
 
@@ -120,6 +116,6 @@ class Cloud
         int count() { return counter; }
 };
 
-#endif // CLOUD_CLASS_HPP
+#endif // CLOUD_CLASS_CPU_HPP
 
 ////////////////////////////////////////////////////////////////

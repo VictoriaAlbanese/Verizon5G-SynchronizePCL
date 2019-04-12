@@ -38,7 +38,7 @@
 #include <vector>
 
 #define MEGA 1048576
-#define NN_CONNECTIVITY 1
+#define NN_CONNECTIVITY 4
 #define SMOOTHNESS 0.01
 
 using namespace std;

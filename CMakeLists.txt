@@ -28,8 +28,16 @@ catkin_package()
 ## Specify additional locations of header files
 set_directory_properties( PROPERTIES COMPILE_DEFINITIONS "" )
 set(PCL_CUDA_INCLUDE_DIRS /home/ubuntu/pcl/cuda/io)
+include_directories(${catkin_INCLUDE_DIRS})
+
+
+add_executable(cpu_cloud_node   src/cloud_node_cpu.cpp 
+                                src/cloud_class_cpu.cpp 
+                                src/cloud_class_cpu.hpp)
+target_link_libraries(cpu_cloud_node ${catkin_LIBRARIES})
+
+
 include_directories(
-  ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIR}
   ${PCL_INCLUDE_DIRS}
   ${PCL_CUDA_INCLUDE_DIRS}

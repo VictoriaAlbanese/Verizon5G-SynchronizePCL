@@ -8,8 +8,7 @@
 //
 ////////////////////////////////////////////////////////////////
 
-#include "cloud_class.hpp"
-#include "MLS.h"
+#include "cloud_class_cpu.hpp"
 
 ////////////////////////////////////////////////////////////////
 
@@ -93,7 +92,7 @@ void Cloud::produce_model(string model_name)
  
     before = clock();
     //this->log_event(before, after, "Move least squares function", BEFORE); 
-    this->move_least_squares<Device>();
+    this->move_least_squares();
     after = clock();
     this->log_event(before, after, "Move least squares function", AFTER); 
 
@@ -262,53 +261,27 @@ void Cloud::concatenate_clouds()
 // MOVE LEAST SQUARES FUNCTION
 // aligns the surface normals to eliminate noise
 // also does upsampling ro reduce noise & fill holes
-template <template <typename> class Storage>
 void Cloud::move_least_squares()
 {
-    //cout << "\t# Points in Cloud Before : " << this->master_cloud.points.size() << " --------------------------------" << endl;
-    std_msgs::Header old_head;
-    pcl_conversions::fromPCL(this->master_cloud.header, old_head);
+    //cout << "\t" << this->master_cloud.points.size() << " --------------------------------" << endl;
+    PointCloud<PointXYZ>::Ptr cloud(new PointCloud<PointXYZ>);
+    copyPointCloud(this->master_cloud, *cloud);
 
-    PointCloud<pcl::PointXYZRGB>::Ptr output (new PointCloud<pcl::PointXYZRGB>);
-    PointCloudAOS<Host> data_host;
-    PointCloudAOS<Device>::Ptr data;
-    PointCloudAOS<Device>::Ptr data_out;
-   
-    // convert pcl cloud to cuda cloud 
-    data_host.points.resize(this->master_cloud.points.size());
-    for (size_t i = 0; i < this->master_cloud.points.size (); ++i)
-    {
-        pcl::cuda::PointXYZRGB pt;
-        pt.x = this->master_cloud.points[i].x;
-        pt.y = this->master_cloud.points[i].y;
-        pt.z = this->master_cloud.points[i].z;
-        pt.rgb = *(float*)(&this->master_cloud.points[i].rgb); // Pack RGB into a float
-        data_host.points[i] = pt;
-    }
-    data_host.width = this->master_cloud.width;
-    data_host.height = this->master_cloud.height;
-    data_host.is_dense = this->master_cloud.is_dense;
-
-    // make sure there is enough memory in the gpu for this 
-    size_t free, total;
-    cudaMemGetInfo(&free, &total);
-    if (free/MEGA < 15)
-    {
-    	cout << "Not enough memory!   ";
-    	cout << "Free: " << free/MEGA << " of " << total/MEGA << " mb" << endl;
-    	return;
-    }
-
-    // thrust the cloud through the gpu mls stuff
-    data = toStorage<Host, Storage> (data_host); 
-    data_out = toStorage<Host, Storage> (data_host);
-    thrustPCL_AOS(data, data_out, NN_CONNECTIVITY, SMOOTHNESS);
-
-    // save the cloud to a pcl cloud 
-    pcl::cuda::toPCL(*data_out, *output);
-    this->master_cloud = *output;
-    pcl_conversions::toPCL(old_head, this->master_cloud.header);
-    //cout << "\t# Points in Cloud After : " << this->master_cloud.points.size() << " --------------------------------" << endl;
+    search::KdTree<PointXYZ>::Ptr tree(new search::KdTree<PointXYZ>);
+    PointCloud<PointNormal> mls_normals;
+    pcl::MovingLeastSquares<PointXYZ, PointNormal> mls;
+ 
+    // mls smoothing
+    mls.setComputeNormals(true);
+    mls.setInputCloud(cloud);
+    mls.setPolynomialOrder(2);
+    mls.setSearchMethod(tree);
+    mls.setSearchRadius(0.015);
+    mls.process(mls_normals);
+    
+    // recaluclate the normals with upsampling
+    copyPointCloud(mls_normals, this->master_cloud);
+    //cout << "\t" << this->master_cloud.points.size() << " --------------------------------" << endl;
 }
 
 
