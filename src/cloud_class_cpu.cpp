@@ -141,14 +141,13 @@ void Cloud::publish_master_cloud()
 bool Cloud::initialized() 
 { 
     return (this->cloud1_initialized 
-            //&& this->cloud2_initialized 
+            && this->cloud2_initialized 
             && this->cloud3_initialized 
             && this->cloud4_initialized 
             && this->cloud5_initialized 
             && this->cloud6_initialized 
             && this->cloud7_initialized 
-            && this->cloud8_initialized 
-            && this->cloud9_initialized);
+            && this->cloud8_initialized);
 }
 
 // FILTERED CLOUD1 CALLBACK FUNCTION
@@ -248,14 +247,13 @@ void Cloud::filtered_cloud9_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::concatenate_clouds() 
 {
     this->master_cloud = this->cloud1;
-    //this->master_cloud+= this->cloud2;
+    this->master_cloud+= this->cloud2;
     this->master_cloud+= this->cloud3;
     this->master_cloud+= this->cloud4;
     this->master_cloud+= this->cloud5;
     this->master_cloud+= this->cloud6;
     this->master_cloud+= this->cloud7;
     this->master_cloud+= this->cloud8;
-    this->master_cloud+= this->cloud9;
 }
 
 // MOVE LEAST SQUARES FUNCTION

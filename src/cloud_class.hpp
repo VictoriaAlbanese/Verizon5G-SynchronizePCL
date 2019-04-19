@@ -31,6 +31,9 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/String.h>
 
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/surface/poisson.h>
+
 
 #define BEFORE 0
 #define AFTER 1
@@ -91,7 +94,7 @@ class Cloud
         template <template <typename> class Storage>
         void move_least_squares();
  
-        void voxel_filter();
+        void voxel_filter(float leaf_size);
         void output_file(string model_name);
 
     	void filtered_cloud1_callback(sensor_msgs::PointCloud2 msg);

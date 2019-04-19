@@ -86,31 +86,31 @@ void Cloud::produce_model(string model_name)
     clock_t after;
 
     before = clock();
-    //this->log_event(before, after, "Concatenate function", BEFORE); 
     this->concatenate_clouds();
     after = clock();
     this->log_event(before, after, "Concatenate function", AFTER); 
  
     before = clock();
-    //this->log_event(before, after, "Move least squares function", BEFORE); 
+    this->voxel_filter(0.0022);
+    after = clock();
+    this->log_event(before, after, "Voxel function", AFTER); 
+
+    before = clock();
     this->move_least_squares<Device>();
     after = clock();
     this->log_event(before, after, "Move least squares function", AFTER); 
 
     before = clock();
-    //this->log_event(before, after, "Voxel function", BEFORE); 
-    this->voxel_filter();
+    this->voxel_filter(0.0075);
     after = clock();
     this->log_event(before, after, "Voxel function", AFTER); 
 
     before = clock();
-    //this->log_event(before, after, "Triangulate function", BEFORE); 
     this->triangulate_clouds();
     after = clock();
     this->log_event(before, after, "Triangulate function", AFTER); 
 
     before = clock();
-    //this->log_event(before, after, "Creation of output file", BEFORE); 
     this->output_file(model_name); 
     after = clock();
     this->log_event(before, after, "Creation of output file", AFTER); 
@@ -142,14 +142,14 @@ void Cloud::publish_master_cloud()
 bool Cloud::initialized() 
 { 
     return (this->cloud1_initialized 
-            //&& this->cloud2_initialized 
+            && this->cloud2_initialized 
             && this->cloud3_initialized 
             && this->cloud4_initialized 
             && this->cloud5_initialized 
             && this->cloud6_initialized 
             && this->cloud7_initialized 
             && this->cloud8_initialized 
-            && this->cloud9_initialized);
+            );
 }
 
 // FILTERED CLOUD1 CALLBACK FUNCTION
@@ -249,14 +249,13 @@ void Cloud::filtered_cloud9_callback(sensor_msgs::PointCloud2 msg)
 void Cloud::concatenate_clouds() 
 {
     this->master_cloud = this->cloud1;
-    //this->master_cloud+= this->cloud2;
+    this->master_cloud+= this->cloud2;
     this->master_cloud+= this->cloud3;
     this->master_cloud+= this->cloud4;
     this->master_cloud+= this->cloud5;
     this->master_cloud+= this->cloud6;
     this->master_cloud+= this->cloud7;
     this->master_cloud+= this->cloud8;
-    this->master_cloud+= this->cloud9;
 }
 
 // MOVE LEAST SQUARES FUNCTION
@@ -265,7 +264,7 @@ void Cloud::concatenate_clouds()
 template <template <typename> class Storage>
 void Cloud::move_least_squares()
 {
-    //cout << "\t# Points in Cloud Before : " << this->master_cloud.points.size() << " --------------------------------" << endl;
+    cout << "\t# Points in Cloud Before : " << this->master_cloud.points.size() << " --------------------------------" << endl;
     std_msgs::Header old_head;
     pcl_conversions::fromPCL(this->master_cloud.header, old_head);
 
@@ -314,7 +313,7 @@ void Cloud::move_least_squares()
 
 // VOXEL FILTER FUNCTION
 // downsamples point cloud to make the resulting model cleaner
-void Cloud::voxel_filter()
+void Cloud::voxel_filter(float leaf_size)
 {
     PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud(new PointCloud<pcl::PointXYZRGB>);
     PointCloud<pcl::PointXYZRGB>::Ptr cloud(new PointCloud<pcl::PointXYZRGB>);
@@ -322,7 +321,7 @@ void Cloud::voxel_filter()
 
     VoxelGrid<pcl::PointXYZRGB> sor;
     sor.setInputCloud(cloud);
-    sor.setLeafSize(0.0075, 0.0075, 0.0075); 
+    sor.setLeafSize(leaf_size, leaf_size, leaf_size); 
     sor.filter(this->master_cloud);
 }
 
@@ -354,12 +353,20 @@ void Cloud::triangulate_clouds()
     gp3.setMaximumNearestNeighbors(500);                        // defines how many neighbors are searched for
     gp3.setMinimumAngle(M_PI/18);                               //  10 degrees : minimum angle in each triangle
     gp3.setMaximumAngle(5*M_PI/6);                              // 150 degrees : maximim angle in each triangle
-    gp3.setMaximumSurfaceAngle(M_PI/2);                         //  90 degrees : helps keep jarring transitions smooth 
+    gp3.setMaximumSurfaceAngle(M_PI/4);                         //  90 degrees : helps keep jarring transitions smooth 
     gp3.setNormalConsistency(true);                             // also helps keep jarring transitions smooth
 
     gp3.setInputCloud(normal_cloud);    // initialize the input cloud of the gp3
     gp3.setSearchMethod(mesh_tree);     // initialize the input tree of the gp3
     gp3.reconstruct(this->master_mesh); // triangulize that shit
+    
+    /*
+    cout << "begin poisson reconstruction" << endl;
+    Poisson<PointNormal> poisson;
+    poisson.setDepth(10);
+    poisson.setInputCloud(normal_cloud);
+    poisson.reconstruct(this->master_mesh);
+    */
 }
 
 // OUTPUT FILE FUNCTION
