@@ -15,23 +15,23 @@ so that the pointclouds they generate can be visualized
 
 
     <!-- This node rotates all the cameras into a global frame -->    
-    <node pkg="synchronize_pointclouds" type="ufo_transformer_node" name="ufo_transformer_node" />
+    <node pkg="synchronize_pointclouds" type="transformer_node" name="transformer_node" />
 
 
     <!-- This launches each of the cameras with parameters given in separate launchfiles -->
     <include file="$(find synchronize_pointclouds)/launch/camera_1.launch" />
-    <!--<include file="$(find synchronize_pointclouds)/launch/camera_2.launch" />-->
+    <include file="$(find synchronize_pointclouds)/launch/camera_2.launch" />
     <include file="$(find synchronize_pointclouds)/launch/camera_3.launch" />
     <include file="$(find synchronize_pointclouds)/launch/camera_4.launch" />
     <include file="$(find synchronize_pointclouds)/launch/camera_5.launch" />
     <include file="$(find synchronize_pointclouds)/launch/camera_6.launch" />
     <include file="$(find synchronize_pointclouds)/launch/camera_7.launch" />
     <include file="$(find synchronize_pointclouds)/launch/camera_8.launch" />
-    <include file="$(find synchronize_pointclouds)/launch/camera_9.launch" />
-    
   
     <!-- This launches RViz all setup to visualize them -->
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find synchronize_pointclouds)/rviz/ufo.rviz" required="true" />
+    <!--
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find synchronize_pointclouds)/rviz/spidr.rviz" required="true" />
+    -->
 
 </launch>
 

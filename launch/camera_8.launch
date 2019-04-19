@@ -6,6 +6,9 @@ Filename: camera_8.launch
 Purpose: Launch the Intel RealSense 435i camera
 so that its pointcloud can be visualized
 
+NOTE: This camera is mounted (from the robot's perspective)
+in the back on the right side, tilted down looking at the object
+
 -->
 
 <launch>
@@ -19,7 +22,7 @@ so that its pointcloud can be visualized
 
     <!-- This transforms each resulting pointcloud into a global reference frame -->
     <node name="camera_8_tf" pkg="tf" type="static_transform_publisher"
-        args="0.216 -0.118 0.015 7.537 0 -1.60 /world /camera_8_color_optical_frame 100"/>
+        args="-0.26 0.375 0.275 -2.356 -0.025 -2.102 /world /camera_8_color_optical_frame 100"/>
 
 
     <!-- These nodelets limit the FOV of the camera (including filtering out the ground plane) -->
@@ -48,7 +51,7 @@ so that its pointcloud can be visualized
         <remap from="~output" to="/camera_8/depth_registered/points_filtered_ground_plane"/>
         <rosparam>
             filter_field_name: z
-            filter_limit_min: 0.01
+            filter_limit_min: 0.005
             filter_limit_max: 0.5
             filter_limit_negative: False
         </rosparam>
