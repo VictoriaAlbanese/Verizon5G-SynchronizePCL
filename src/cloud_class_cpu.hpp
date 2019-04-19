@@ -8,8 +8,8 @@
 //
 ////////////////////////////////////////////////////////////////
 
-#ifndef CLOUD_CLASS_HPP
-#define CLOUD_CLASS_HPP
+#ifndef CLOUD_CLASS_CPU_HPP
+#define CLOUD_CLASS_CPU_HPP
 
 #include <boost/filesystem.hpp>
 #include <cstring>
@@ -20,7 +20,6 @@
 #include <pcl/io/obj_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_cloud.h>
-#include <pcl/cuda/io/host_device.h>
 #include <pcl/point_types.h>
 #include <pcl/surface/gp3.h>
 #include <pcl/surface/mls.h>
@@ -30,9 +29,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/String.h>
-
-#include <pcl/features/normal_3d_omp.h>
-#include <pcl/surface/poisson.h>
 
 
 #define BEFORE 0
@@ -90,11 +86,8 @@ class Cloud
        	
         void concatenate_clouds();
         void triangulate_clouds();
-        
-        template <template <typename> class Storage>
-        void move_least_squares();
- 
-        void voxel_filter(float leaf_size);
+        void move_least_squares();       
+        void voxel_filter();
         void output_file(string model_name);
 
     	void filtered_cloud1_callback(sensor_msgs::PointCloud2 msg);
@@ -123,6 +116,6 @@ class Cloud
         int count() { return counter; }
 };
 
-#endif // CLOUD_CLASS_HPP
+#endif // CLOUD_CLASS_CPU_HPP
 
 ////////////////////////////////////////////////////////////////

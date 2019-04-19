@@ -10,13 +10,13 @@
 //////////////////////////////////////////////////////////////
 
 #include <iostream>
-#include "cloud_class.hpp"
+#include "cloud_class_cpu.hpp"
 
 using namespace std;
 
 int main(int argc, char * argv[]) 
 {
-    ros::init(argc, argv, "cloud_node");
+    ros::init(argc, argv, "cloud_node_cpu");
     ros::NodeHandle nh;
 
     Cloud cloud(nh);

@@ -19,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies 
 find_package(OpenCV 3.3.1 EXACT REQUIRED)
-find_package(CUDA 10.1 EXACT REQUIRED)
+find_package(CUDA 10.0 EXACT REQUIRED) # version 10.1 is used on the sensor machine
 find_package(PCL 1.9.1 EXACT REQUIRED)
 
 ## The catkin_package macro generates cmake config files for your package
@@ -27,23 +27,31 @@ catkin_package()
 
 ## Specify additional locations of header files
 set_directory_properties( PROPERTIES COMPILE_DEFINITIONS "" )
-set(PCL_CUDA_INCLUDE_DIRS /home/csrobot/pcl/pcl-pcl-1.9.1/cuda/io)
+set(PCL_CUDA_INCLUDE_DIRS /home/ubuntu/pcl/cuda/io)
+include_directories(${catkin_INCLUDE_DIRS})
+
+
+add_executable(cpu_cloud_node   src/cloud_node_cpu.cpp 
+                                src/cloud_class_cpu.cpp 
+                                src/cloud_class_cpu.hpp)
+target_link_libraries(cpu_cloud_node ${catkin_LIBRARIES})
+
+
 include_directories(
-  ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIR}
   ${PCL_INCLUDE_DIRS}
   ${PCL_CUDA_INCLUDE_DIRS}
   ${CUDA_INCLUDE_DIRS}
 )
 
-MESSAGE("PCL_CUDA_INCLUDE_DIRS:= ${PCL_CUDA_INCLUDE_DIRS}")
+#message("PCL_CUDA_INCLUDE_DIRS:= ${PCL_CUDA_INCLUDE_DIRS}")
 
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-message("pcl_ros:=${catkin_INCLUDE_DIRS}")
-message("pcl_library_shit:=${PCL_LIBRARY_DIRS}")
-message("pcl_definitions:=${PCL_DEFINITIONS}")
+#message("pcl_ros:=${catkin_INCLUDE_DIRS}")
+#message("pcl_library_shit:=${PCL_LIBRARY_DIRS}")
+#message("pcl_definitions:=${PCL_DEFINITIONS}")
 
 ## Declare a C++ executable
 cuda_add_executable(cloud_node  src/MLS.h
@@ -53,15 +61,13 @@ cuda_add_executable(cloud_node  src/MLS.h
                                 src/MLS.cu)
 add_executable(transformer_node src/transformer_node.cpp)
 add_executable(receiver_node src/receiver_node.cpp)
-#add_executable(calibration_node src/calibration_node.cpp)
 
 ## Specify libraries to link a library or executable target against
 #message("pcl:=${PCL_LIBRARIES}")
-message("pcl:=${PCL_INCLUDE_DIRS}")
+#message("pcl:=${PCL_INCLUDE_DIRS}")
 target_link_libraries(cloud_node    ${catkin_LIBRARIES} 
                                     ${PCL_LIBRARIES} 
                                     ${PCL_CUDA_COMMON_LIBRARIES})
 target_link_libraries(transformer_node ${catkin_LIBRARIES})
 target_link_libraries(receiver_node ${catkin_LIBRARIES})
-#target_link_libraries(calibration_node ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
