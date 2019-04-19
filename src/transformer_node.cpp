@@ -87,7 +87,7 @@ void raw_cloud_callback(sensor_msgs::PointCloud2 msg)
 
 int main(int argc, char * argv[]) 
 {
-    ros::init(argc, argv, "ufo_transformer_node");
+    ros::init(argc, argv, "transformer_node");
     ros::NodeHandle handle;
 
     raw_cloud1_sub = handle.subscribe("camera_1/depth_registered/points", 1, &raw_cloud_callback);
