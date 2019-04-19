@@ -29,9 +29,7 @@ so that the pointclouds they generate can be visualized
     <include file="$(find synchronize_pointclouds)/launch/camera_8.launch" />
   
     <!-- This launches RViz all setup to visualize them -->
-    <!--
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find synchronize_pointclouds)/rviz/spidr.rviz" required="true" />
-    -->
 
 </launch>
 
